@@ -1,0 +1,15 @@
+.username{
+    cursor: none;
+    margin-top: 7px !important;
+}
+
+.navbar{
+    padding-left: 20px !important;
+    padding-right: 20px !important;
+}
+
+.topbar-dropdown-menu {
+    position: absolute !important; 
+    top: 100% !important; 
+    z-index: 1050; 
+}

@@ -1,0 +1,19 @@
+body{
+    overflow-x: hidden !important;
+}
+.form-box{
+    margin-top: 70px !important;
+}
+/* Fix dropdowns or selects getting hidden behind modals, sidebars, or containers */
+.dropdown-menu,
+.form-select {
+  position: relative !important;
+  z-index: 9999 !important;
+}
+
+/* Also ensure parent containers don’t clip overflow */
+.card,
+.container,
+.row {
+  overflow: visible !important;
+}
