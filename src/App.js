@@ -26,6 +26,7 @@ import PasswordReset from './Login/PasswordReset';
 import Cart from './Users/Cart';
 import Orders from './Users/Orders';
 import ModePrompt from './context/ModePrompt'; 
+import FullOrders from './Pages/Orders/Orders'
 
 function AppRoutes() {
   const { user } = useContext(AuthContext);
@@ -54,6 +55,7 @@ function AppRoutes() {
           <Route path='/admin/products/:id' element={<ProtectedRoute><SpecificProduct /></ProtectedRoute>} />
           <Route path='/admin/logos' element={<ProtectedRoute><Logos /></ProtectedRoute>} />
           <Route path='/admin/logos/new-logo' element={<ProtectedRoute><CreateLogos /></ProtectedRoute>} />
+          <Route path='/admin/orders' element={<ProtectedRoute><FullOrders /></ProtectedRoute>} />
         </>
       )}
 

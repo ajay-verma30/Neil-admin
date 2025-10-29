@@ -13,7 +13,8 @@ import {
   faBuildingUser,
   faBoxOpen,
   faList,
-  faFolderTree,  
+  faFolderTree,
+  faTruckFast,  
 } from "@fortawesome/free-solid-svg-icons";
 import { Link, useLocation } from "react-router-dom";
 import "./SideBar.css";
@@ -58,7 +59,12 @@ const Sidebar = () => {
         { title: "Sub-Categories", icon: faFolderTree, path: `/admin/sub-categories` },
         { title: "Logos", icon: faHelicopterSymbol, path: `/admin/logos` },
       ],
-    }
+    },
+    {
+        title: "Orders",
+        icon: faTruckFast,
+        path: "/admin/orders",
+      },
 ]
 }else if (user?.role === "Admin" || user?.role === "Manager"){
 menuItems = [

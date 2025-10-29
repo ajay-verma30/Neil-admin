@@ -7,7 +7,7 @@ import { useNavigate } from "react-router-dom";
 import "./TopBar.css";
 
 function TopBar() {
-  const { logout, user, cartCount } = useContext(AuthContext); // ✅ get cartCount here
+  const { logout, user, cartCount } = useContext(AuthContext); 
   const navigate = useNavigate();
 
   const handleLogout = async (e) => {
@@ -21,12 +21,25 @@ function TopBar() {
     }
   };
 
-  const handleNavigation = () => {
-    if (user?.role === "Super Admin") navigate("/dashboard");
-    else if (user?.role === "Admin" || user?.role === "Manager")
-      navigate(`/${user?.org_id}/dashboard`);
-    else navigate("/products");
-  };
+const handleNavigation = () => {
+  const mode = localStorage.getItem("mode");
+
+  if (user?.role === "Super Admin" || user?.role === "Admin" || user?.role === "Manager") {
+    if (mode === "shop") {
+      navigate("/products");
+    } else {
+      if (user?.role === "Super Admin") {
+        navigate("/admin/dashboard");
+      } else if (user?.role === "Admin" || user?.role === "Manager") {
+        navigate(`/${user?.org_id}/dashboard`);
+      }
+    }
+  } else {
+    navigate("/products");
+  }
+};
+
+
 
   const handleCartClick = () => navigate("/cart");
 

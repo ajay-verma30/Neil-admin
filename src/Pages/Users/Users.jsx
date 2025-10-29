@@ -31,8 +31,19 @@ function Users() {
   const [bulkFile, setBulkFile] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [alert, setAlert] = useState(null);
+  const [orgFilter, setOrgFilter] = useState("");
+const [groupFilter, setGroupFilter] = useState("");
+const [searchTerm, setSearchTerm] = useState("");
   const navigate = useNavigate();
 
+
+  const filteredUsers = users.filter((u) => {
+  const fullName = `${u.f_name} ${u.l_name}`.toLowerCase();
+  const matchesSearch = fullName.includes(searchTerm.toLowerCase());
+  const matchesOrg = orgFilter ? u.org_name === orgFilter : true;
+  const matchesGroup = groupFilter ? u.user_groups === groupFilter : true;
+  return matchesSearch && matchesOrg && matchesGroup;
+});
   // Add User form state
   const [formData, setFormData] = useState({
     f_name: "",
@@ -169,7 +180,51 @@ const addNewUser = () => {
           <div className="form-box p-3">
             <div className="d-flex justify-content-between align-items-center mb-4">
               <h4 className="mb-0">Users List</h4>
-              <div className="d-flex gap-2">
+              <div className="d-flex flex-wrap gap-2 align-items-center">
+                {user.role === "Super Admin" && (
+      <>
+        <Form.Select
+          size="sm"
+          style={{ width: "180px" }}
+          value={orgFilter}
+          onChange={(e) => setOrgFilter(e.target.value)}
+        >
+          <option value="">All Organizations</option>
+          {[...new Set(users.map((u) => u.org_name))].map(
+            (org) =>
+              org && (
+                <option key={org} value={org}>
+                  {org}
+                </option>
+              )
+          )}
+        </Form.Select>
+      </>
+    )}
+    <Form.Select
+      size="sm"
+      style={{ width: "180px" }}
+      value={groupFilter}
+      onChange={(e) => setGroupFilter(e.target.value)}
+    >
+      <option value="">All Groups</option>
+      {[...new Set(users.map((u) => u.user_groups))].map(
+        (grp) =>
+          grp && (
+            <option key={grp} value={grp}>
+              {grp}
+            </option>
+          )
+      )}
+    </Form.Select>
+ <Form.Control
+      type="text"
+      placeholder="Search by full name..."
+      size="sm"
+      style={{ width: "200px" }}
+      value={searchTerm}
+      onChange={(e) => setSearchTerm(e.target.value)}
+    />
                 <Button
                   variant="primary"
                   size="sm"
@@ -213,6 +268,7 @@ const addNewUser = () => {
                     <th>Full Name</th>
                     <th>Email</th>
                     <th>Contact</th>
+                     {user.role === "Super Admin" && <th>Organization</th>}
                     <th>Groups</th>
                     <th>Role</th>
                     <th>Active</th>
@@ -221,13 +277,14 @@ const addNewUser = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {users.length > 0 ? (
-                    users.map((u, index) => (
+                 {filteredUsers.length > 0 ? (
+  filteredUsers.map((u, index) => (
                       <tr key={u.id}>
                         <td>{index + 1}</td>
-                        <td>{`${u.f_name} ${u.l_name}`}</td>
+                        <td><strong>{`${u.f_name} ${u.l_name}`}</strong></td>
                         <td>{u.email}</td>
                         <td>{u.contact}</td>
+                        {user.role === "Super Admin" && <td><strong>{u.org_name}</strong></td>}
                         <td>{u.user_groups || "-"}</td>
                         <td>{u.role}</td>
                         <td>
@@ -237,7 +294,7 @@ const addNewUser = () => {
                             <Badge bg="danger">Inactive</Badge>
                           )}
                         </td>
-                        <td>{u.created_at}</td>
+                        <td>{new Date(u.created_at).toLocaleString()}</td>
                         <td>
                           <button
                             className="btn btn-outline-primary btn-sm me-2 border-0"
@@ -254,9 +311,10 @@ const addNewUser = () => {
                     ))
                   ) : (
                     <tr>
-                      <td colSpan="9" className="text-center">
-                        No users found.
-                      </td>
+                      <td colSpan="10" className="text-center">
+  No users found.
+</td>
+
                     </tr>
                   )}
                 </tbody>
