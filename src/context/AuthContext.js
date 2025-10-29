@@ -8,18 +8,65 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [accessToken, setAccessToken] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [cart, setCart] = useState([]);
+   const [mode, setMode] = useState(null);
 
   const accessTokenRef = useRef(accessToken);
   useEffect(() => {
     accessTokenRef.current = accessToken;
   }, [accessToken]);
 
-  // Cleanup function
-  const clientCleanup = () => {
-    localStorage.removeItem("accessToken");
-    setAccessToken(null);
-    setUser(null);
+  useEffect(() => {
+    const savedMode = localStorage.getItem("mode");
+    if (savedMode) setMode(savedMode);
+  }, []);
+
+  useEffect(() => {
+    if (mode) localStorage.setItem("mode", mode);
+  }, [mode]);
+
+const clientCleanup = () => {
+  localStorage.removeItem("accessToken");
+  localStorage.removeItem("mode");
+  sessionStorage.clear(); 
+  setAccessToken(null);
+  setUser(null);
+  setMode(null);
+};
+
+
+    // ==============================
+  // Cart Logic
+  // ==============================
+
+  useEffect(() => {
+    const savedCart = localStorage.getItem("user_cart");
+    if (savedCart) setCart(JSON.parse(savedCart));
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem("user_cart", JSON.stringify(cart));
+  }, [cart]);
+
+  const addToCart = (item) => {
+    setCart((prev) => {
+      const existing = prev.find((p) => p.id === item.id);
+      if (existing) {
+        return prev.map((p) =>
+          p.id === item.id ? { ...p, quantity: p.quantity + item.quantity } : p
+        );
+      }
+      return [...prev, item];
+    });
   };
+
+  const removeFromCart = (id) => {
+    setCart((prev) => prev.filter((item) => item.id !== id));
+  };
+
+  const clearCart = () => setCart([]);
+
+  const cartCount = cart.reduce((sum, item) => sum + (item.quantity || 1), 0);
 
   // Refresh token
   const refreshAccessToken = async () => {
@@ -114,36 +161,40 @@ export const AuthProvider = ({ children }) => {
 
   // Login
   const login = async (email, password) => {
-    try {
-      const res = await axios.post(
-        "http://localhost:3000/users/login",
-        { email, password },
-        { withCredentials: true }
-      );
+  try {
+    const res = await axios.post(
+      "http://localhost:3000/users/login",
+      { email, password },
+      { withCredentials: true }
+    );
 
-      if (res.status === 200 && res.data.accessToken) {
-        const token = res.data.accessToken;
-        const decodedUser = jwtDecode(token);
-        localStorage.setItem("accessToken", token);
-        setAccessToken(token);
-        setUser(decodedUser);
+    if (res.status === 200 && res.data.accessToken) {
+      const token = res.data.accessToken;
+      const decodedUser = jwtDecode(token);
+      localStorage.setItem("accessToken", token);
+      setAccessToken(token);
+      setUser(decodedUser);
 
-        return {
-          success: true,
-          org_id: decodedUser.org_id,
-          role: decodedUser.role,
-        };
-      } else {
-        return { success: false, message: "Login failed." };
-      }
-    } catch (err) {
-      console.error("Login error:", err);
+      setMode(null);
+      localStorage.removeItem("mode");
+
       return {
-        success: false,
-        message: err.response?.data?.message || "Login failed. Try again.",
+        success: true,
+        org_id: decodedUser.org_id,
+        role: decodedUser.role,
       };
+    } else {
+      return { success: false, message: "Login failed." };
     }
-  };
+  } catch (err) {
+    console.error("Login error:", err);
+    return {
+      success: false,
+      message: err.response?.data?.message || "Login failed. Try again.",
+    };
+  }
+};
+
 
   return (
     <AuthContext.Provider
@@ -154,6 +205,12 @@ export const AuthProvider = ({ children }) => {
         refreshAccessToken,
         logout,
         loading,
+         cart,
+        addToCart,
+        removeFromCart,
+        clearCart,
+        cartCount,
+         mode, setMode 
       }}
     >
       {children}

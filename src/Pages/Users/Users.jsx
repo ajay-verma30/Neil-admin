@@ -76,18 +76,26 @@ function Users() {
     }));
   };
   const handleBulkFileChange = (e) => {
-    const file = e.target.files[0];
-    if (file && (file.type === "text/csv" || file.name.endsWith(".csv"))) {
-      setBulkFile(file);
-    } else {
-      setAlert({ type: "warning", message: "Please select a valid CSV file" });
-      setBulkFile(null);
-    }
-  };
+  const file = e.target.files[0];
+  if (
+    file &&
+    (file.type ===
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" ||
+      file.type === "application/vnd.ms-excel" ||
+      file.name.endsWith(".xlsx") ||
+      file.name.endsWith(".xls"))
+  ) {
+    setBulkFile(file);
+    setAlert(null);
+  } else {
+    setAlert({ type: "warning", message: "Please select a valid Excel file (.xlsx or .xls)" });
+    setBulkFile(null);
+  }
+};
 
 const addNewUser = () => {
   if (user.role === "Super Admin") {
-    navigate("/users/new");
+    navigate("/admin/users/new");
   } else {
     navigate(`/${user.org_id}/users/new`);
   }
@@ -95,7 +103,7 @@ const addNewUser = () => {
 
   const handleEdit = (userId, orgId) => {
     if (user.role === "Super Admin") {
-    navigate(`/users/${userId}`);
+    navigate(`/admin/users/${userId}`);
   } 
   else {
      navigate(`/${orgId}/users/${userId}`);
@@ -145,6 +153,10 @@ const addNewUser = () => {
       setUploading(false);
     }
   };
+
+   const userNav = () => {
+  navigate("/products");
+};
 
   return (
     <>
@@ -234,6 +246,9 @@ const addNewUser = () => {
                           >
                             <FontAwesomeIcon icon={faPencil} />
                           </button>
+                          <Button className="btn-primary shop-as-user" onClick={userNav}>
+  Shop As User
+</Button>
                         </td>
                       </tr>
                     ))

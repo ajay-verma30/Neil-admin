@@ -1,12 +1,13 @@
 import React, { useEffect, useState, useContext } from "react";
 import TopBar from "../../Components/TopBar/TopBar";
 import Sidebar from "../../Components/SideBar/SideBar";
-import { Row, Col, Container, Table, Spinner } from "react-bootstrap";
+import { Row, Col, Container, Table, Spinner,Button } from "react-bootstrap";
 import { AuthContext } from "../../context/AuthContext";
 import axios from "axios";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { useNavigate } from "react-router-dom";
+import { href, useNavigate } from "react-router-dom";
 import { faPencil, faPlus } from "@fortawesome/free-solid-svg-icons";
+import "./Product.css"
 
 function Products() {
   const navigate = useNavigate();
@@ -36,7 +37,7 @@ function Products() {
 
   const createProduct = () => {
     if (user.role === "Super Admin") {
-      navigate("/new");
+      navigate("/admin/products/new");
     } else {
       navigate(`/${user.org_id}/products/new`);
     }
@@ -45,11 +46,12 @@ function Products() {
   // Updated function: accept product id
   const specProducts = (productId) => {
     if (user.role === "Super Admin") {
-      navigate(`/products/${productId}`);
+      navigate(`/admin/products/${productId}`);
     } else {
       navigate(`/${user.org_id}/products/${productId}`);
     }
   };
+
 
   return (
     <>
@@ -103,12 +105,12 @@ function Products() {
                           ))}
                         </td>
                         <td>{new Date(p.created_at).toLocaleString()}</td>
-                        <td className="text-center">
+                        <td>
                           <FontAwesomeIcon
                             icon={faPencil}
                             style={{ cursor: "pointer" }}
                             onClick={() => specProducts(p.id)} 
-                          />
+                          />                          
                         </td>
                       </tr>
                     ))}

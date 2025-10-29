@@ -50,13 +50,7 @@ function CreateOrganization() {
       );
 
       setSuccessMsg(res.data.message || 'Organization created successfully!');
-      setTimeout(() => {
-        if (user?.role === 'Super Admin') {
-          nav('/organizations');
-        } else {
-          nav('/dashboard');
-        }
-      }, 1200); 
+      nav('/admin/organizations');
 
     } catch (err) {
       setErrorMsg(

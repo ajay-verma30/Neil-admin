@@ -35,28 +35,28 @@ const Sidebar = () => {
     {
       title: "Dashboard",
       icon: faTachometerAlt,
-      path: `/dashboard`,
+      path: `/admin/dashboard`,
     },
     {
         title: "Organizations",
         icon: faBuildingUser,
-        path: "/organizations",
+        path: "/admin/organizations",
       },
     {
       title: "Users & Groups",
       icon: faUsers,
       children: [
-        { title: "Users", icon: faUser, path: `/users` },
-        { title: "Groups", icon: faUserFriends, path: `/groups` }
+        { title: "Users", icon: faUser, path: `/admin/users` },
+        { title: "Groups", icon: faUserFriends, path: `/admin/groups` }
       ],
     },
     {
       title: "Products & Categories",
       icon: faCubes,
       children: [
-        { title: "Products", icon: faBox, path: `/products` },
-        { title: "Sub-Categories", icon: faFolderTree, path: `/sub-categories` },
-        { title: "Logos", icon: faHelicopterSymbol, path: `/logos` },
+        { title: "Products", icon: faBox, path: `/admin/products` },
+        { title: "Sub-Categories", icon: faFolderTree, path: `/admin/sub-categories` },
+        { title: "Logos", icon: faHelicopterSymbol, path: `/admin/logos` },
       ],
     }
 ]
@@ -81,6 +81,7 @@ menuItems = [
       children: [
         { title: "Organization Details", icon: faList, path: `/${effectiveOrgId}/organization_details`},
         { title: "Our Products", icon: faBoxOpen, path: `/${effectiveOrgId}/products`},
+        { title: "Sub-Categories", icon: faFolderTree, path: `/${effectiveOrgId}/sub-categories` },
         { title: "Logos", icon: faHelicopterSymbol, path: `/${effectiveOrgId}/logos`},
       ],
     }

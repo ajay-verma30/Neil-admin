@@ -27,18 +27,17 @@ function Login() {
     setLoading(true);
     try {
       const res = await login(email, password);
-      console.log("Login response:", res);
-
       if (res.success) {
         setSuccessMsg("Login successful! Redirecting...");
 
         // Redirect based on role
         setTimeout(() => {
           if (res.role === "Super Admin") {
-            navigate("/dashboard");
-          } else {
-            // Admin / Manager
+            navigate("/admin/dashboard");
+          } else if(res.role === "Admin" || res.role === "Manager"){
             navigate(`/${res.org_id}/dashboard`);
+          }else{
+            navigate(`/products`);
           }
         }, 1000);
       } else {

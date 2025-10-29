@@ -21,7 +21,7 @@ const AccessDeniedMessage = () => (
 const OrganizationsTable = ({ organizations }) => {
     const navigate = useNavigate();
     const handleEdit = (orgId) => {
-        navigate(`/organization/${orgId}`);
+        navigate(`/admin/organization/${orgId}`);
     };
 
     const handleDelete = (orgId) => {
@@ -122,7 +122,7 @@ function Organization() {
 
     const createOrganization = (e)=>{
       e.preventDefault();
-      nav('/new-organization')
+      nav('/admin/new-organization')
     }
 
     if (!user || user.role !== "Super Admin") {

@@ -88,8 +88,7 @@ function SpecificOrganization() {
       headers: { Authorization: `Bearer ${accessToken}` },
     });
     alert("Organization deleted successfully.");
-    // Redirect back to organization list
-    window.location.href = "/organizations"; // Adjust the route as per your app
+    window.location.href = "/admin/organizations";
   } catch (err) {
     console.error("Failed to delete organization:", err);
     alert(err.response?.data?.message || "Failed to delete organization");

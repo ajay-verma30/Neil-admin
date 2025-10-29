@@ -10,7 +10,7 @@ import {
 import axios from 'axios';
 
 function Groups() {
-  const { accessToken } = useContext(AuthContext);
+  const { accessToken,user } = useContext(AuthContext);
   const [groups, setGroups] = useState([]);
   const [loading, setLoading] = useState(false);
   const [alert, setAlert] = useState(null);
@@ -58,7 +58,8 @@ function Groups() {
     setAlert(null);
 
     try {
-        const payload = { title };
+      const orgId = user.org_id;
+        const payload = { title,org_id:orgId };
         const res = await axios.post('http://localhost:3000/groups/new', payload);
         handleCloseModal();
         setAlert({ type: 'success', message: `Group "${title}" created successfully!` });
@@ -83,19 +84,21 @@ function Groups() {
         <Col xs={10} md={10}>
 
           <div className=" form-box  p-3">
-            <div className="d-flex justify-content-between align-items-center mb-4">
-                <h4 className="mb-0">Groups List</h4>
-                <div className="d-flex gap-2">
-                      <Button
-                    variant="primary"
-                    size="sm"
-                    onClick={handleShowModal} 
-                >
-                    <FontAwesomeIcon icon={faPlus} className="me-2" />
-                    Add Group
-                </Button>      
-                </div>
-            </div>
+           <div className="d-flex justify-content-between align-items-center mb-4">
+  <h4 className="mb-0">Groups List</h4>
+  {user?.role !== "Super Admin" && (
+    <div className="d-flex gap-2">
+      <Button
+        variant="primary"
+        size="sm"
+        onClick={handleShowModal}
+      >
+        <FontAwesomeIcon icon={faPlus} className="me-2" />
+        Add Group
+      </Button>
+    </div>
+  )}
+</div>
  
 
             {alert && alert.type !== 'warning' && (
