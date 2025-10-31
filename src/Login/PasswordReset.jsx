@@ -7,20 +7,15 @@ import "./Login.css";
 function PasswordReset() {
   const location = useLocation();
   const navigate = useNavigate();
-
-  // Extract token and email from URL query params
   const queryParams = new URLSearchParams(location.search);
   const token = queryParams.get("token");
   const email = queryParams.get("email");
-
-  // Local states
   const [password, setPassword] = useState("");
   const [confPassword, setConfPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [errMsg, setErrMsg] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
 
-  // Handle reset password form submission
   const resetUserPassword = async (e) => {
     e.preventDefault();
     setErrMsg("");
@@ -43,7 +38,7 @@ function PasswordReset() {
 
     setLoading(true);
     try {
-      const res = await axios.post("http://localhost:3000/auth/reset-password", {
+      const res = await axios.post("https://neil-backend-1.onrender.com/auth/reset-password", {
         email,
         token,
         password,

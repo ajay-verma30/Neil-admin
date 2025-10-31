@@ -37,7 +37,7 @@ function NewUser() {
                 payload.org_id = user.org_id
             }
             const res = await axios.post(
-                'http://localhost:3000/users/new',
+                'https://neil-backend-1.onrender.com/users/new',
                 payload,
                 { headers: { Authorization: `Bearer ${accessToken}` } }
             )

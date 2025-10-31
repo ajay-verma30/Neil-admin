@@ -34,7 +34,7 @@ function Logos() {
       setLoading(true);
       setError(null);
       try {
-        const res = await axios.get("http://localhost:3000/logos/all-logos", {
+        const res = await axios.get("https://neil-backend-1.onrender.com/logos/all-logos", {
           headers: { Authorization: `Bearer ${accessToken}` },
         });
         setLogos(res.data || []);
@@ -54,7 +54,7 @@ function Logos() {
     if (!window.confirm("Are you sure you want to delete this logo?")) return;
 
     try {
-      await axios.delete(`http://localhost:3000/logos/${id}`, {
+      await axios.delete(`https://neil-backend-1.onrender.com/logos/${id}`, {
         headers: { Authorization: `Bearer ${accessToken}` },
       });
       setLogos((prev) => prev.filter((logo) => logo.id !== id));
@@ -69,7 +69,7 @@ function Logos() {
     if (!window.confirm("Delete this variant?")) return;
 
     try {
-      await axios.delete(`http://localhost:3000/logos/variant/${variantId}`, {
+      await axios.delete(`https://neil-backend-1.onrender.com/logos/variant/${variantId}`, {
         headers: { Authorization: `Bearer ${accessToken}` },
       });
       setLogos((prev) =>

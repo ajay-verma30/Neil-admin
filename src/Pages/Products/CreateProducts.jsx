@@ -57,7 +57,7 @@ function CreateProducts() {
     if (!accessToken) return;
     const fetchGroups = async () => {
       try {
-        const res = await axios.get("http://localhost:3000/groups/all", {
+        const res = await axios.get("https://neil-backend-1.onrender.com/groups/all", {
           headers: { Authorization: `Bearer ${accessToken}` },
           params: { org_id },
         });
@@ -110,7 +110,7 @@ function CreateProducts() {
       return;
     }
     try {
-      const res = await axios.get("http://localhost:3000/sub-categories/all", {
+      const res = await axios.get("https://neil-backend-1.onrender.com/sub-categories/all", {
         headers: { Authorization: `Bearer ${accessToken}` },
         params: { category, org_id },
       });
@@ -179,7 +179,7 @@ function CreateProducts() {
       }));
       data.append("variants", JSON.stringify(variantsPayload));
 
-      const response = await axios.post("http://localhost:3000/products/new", data, {
+      const response = await axios.post("https://neil-backend-1.onrender.com/products/new", data, {
         headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "multipart/form-data" },
       });
 

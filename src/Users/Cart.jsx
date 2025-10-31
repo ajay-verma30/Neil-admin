@@ -41,16 +41,21 @@ function Cart() {
 const handleCheckout = async () => {
   try {
     const res = await axios.post(
-      "http://localhost:3000/checkout/new",
-      { user, cart },
+      "https://neil-backend-1.onrender.com/checkout/new",
+      { user, cart, totalAmount }, 
       {
         headers: { Authorization: `Bearer ${accessToken}` },
       }
     );
 
-    alert(`✅ Order placed successfully! Order ID: ${res.data.orderBatchId || res.data.orderId}`);
+    alert(
+      `✅ Order placed successfully! Order ID: ${
+        res.data.orderBatchId || res.data.orderId
+      }`
+    );
+
     cart.forEach((item) => removeFromCart(item.id));
-    navigate("/orders"); 
+    navigate("/orders");
   } catch (err) {
     console.error("Checkout Error:", err);
 
@@ -62,6 +67,7 @@ const handleCheckout = async () => {
     }
   }
 };
+
 
 
 

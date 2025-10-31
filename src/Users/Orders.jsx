@@ -15,11 +15,10 @@ function Orders() {
       setLoading(true);
       setError(null);
 
-      const res = await axios.get("http://localhost:3000/checkout/all", {
+      const res = await axios.get("https://neil-backend-1.onrender.com/checkout/all", {
         headers: { Authorization: `Bearer ${accessToken}` },
       });
-      console.log(res)
-
+      console.log(res);
       setOrders(res.data.orders || []);
     } catch (err) {
       console.error("❌ Error fetching orders:", err);
@@ -77,6 +76,7 @@ function Orders() {
                 <th>#</th>
                 <th>Preview</th>
                 <th>Title</th>
+                <th>Total Amount</th>
                 <th>Status</th>
                 <th>Ordered On</th>
                 {user?.role === "Super Admin" && <th>Actions</th>}
@@ -89,7 +89,7 @@ function Orders() {
                   <td>
                     {order.preview_image_url ? (
                       <img
-                        src={`http://localhost:3000${order.preview_image_url}`}
+                        src={`https://neil-backend-1.onrender.com${order.preview_image_url}`}
                         alt="Preview"
                         style={{
                           width: "70px",
@@ -103,13 +103,14 @@ function Orders() {
                     )}
                   </td>
                   <td>{order.product_title || "Custom Product"}</td>
+                  <td><strong>{order.total_amount}</strong></td>
                   <td>
                     <Badge bg={getStatusVariant(order.status)}>
                       {order.status}
                     </Badge>
                   </td>
                   <td>
-                    {order.created_at}
+                    {order.order_date}
                   </td>
                   {user?.role === "Super Admin" && (
                     <td>
@@ -121,7 +122,7 @@ function Orders() {
                             order.status === "Pending" ? "Shipped" : "Pending";
                           try {
                             await axios.patch(
-                              `http://localhost:3000/checkout/${order.id}/status`,
+                              `https://neil-backend-1.onrender.com/checkout/${order.id}/status`,
                               { status: newStatus },
                               {
                                 headers: { Authorization: `Bearer ${accessToken}` },

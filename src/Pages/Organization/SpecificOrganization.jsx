@@ -37,7 +37,7 @@ function SpecificOrganization() {
   const fetchOrganization = async () => {
     try {
       setLoading(true);
-      const res = await axios.get(`http://localhost:3000/organization/${effectiveId}`, {
+      const res = await axios.get(`https://neil-backend-1.onrender.com/organization/${effectiveId}`, {
         headers: { Authorization: `Bearer ${accessToken}` },
       });
       setOrg(res.data.organization);
@@ -66,7 +66,7 @@ function SpecificOrganization() {
     try {
       setUpdatingStatus(true);
       const res = await axios.patch(
-        `http://localhost:3000/organization/${orgId}/status`,
+        `https://neil-backend-1.onrender.com/organization/${orgId}/status`,
         { status: false },
         { headers: { Authorization: `Bearer ${accessToken}` } }
       );
@@ -84,7 +84,7 @@ function SpecificOrganization() {
   if (!window.confirm("Are you sure you want to delete this organization? This action cannot be undone.")) return;
 
   try {
-    await axios.delete(`http://localhost:3000/organization/${orgId}`, {
+    await axios.delete(`https://neil-backend-1.onrender.com/organization/${orgId}`, {
       headers: { Authorization: `Bearer ${accessToken}` },
     });
     alert("Organization deleted successfully.");

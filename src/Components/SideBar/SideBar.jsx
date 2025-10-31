@@ -71,7 +71,7 @@ menuItems = [
     {
       title: "Dashboard",
       icon: faTachometerAlt,
-      path: `/${effectiveOrgId}`,
+      path: `/${effectiveOrgId}/dashboard`,
     },
     {
       title: "Users & Groups",
@@ -90,7 +90,11 @@ menuItems = [
         { title: "Sub-Categories", icon: faFolderTree, path: `/${effectiveOrgId}/sub-categories` },
         { title: "Logos", icon: faHelicopterSymbol, path: `/${effectiveOrgId}/logos`},
       ],
-    }
+    },{
+        title: "Orders",
+        icon: faTruckFast,
+        path: `/${effectiveOrgId}/org_orders`,
+      }
   ]
 }else{
   menuItems = [

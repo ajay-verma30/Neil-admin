@@ -37,10 +37,10 @@ function SpecProduct() {
         setError("");
 
         const [productRes, groupsRes] = await Promise.all([
-          axios.get(`http://localhost:3000/products/${id}`, {
+          axios.get(`https://neil-backend-1.onrender.com/products/${id}`, {
             headers: { Authorization: `Bearer ${accessToken}` },
           }),
-          axios.get("http://localhost:3000/groups/all", {
+          axios.get("https://neil-backend-1.onrender.com/groups/all", {
             headers: { Authorization: `Bearer ${accessToken}` },
           }),
         ]);
@@ -86,7 +86,7 @@ function SpecProduct() {
         is_visible,
       }));
       await axios.put(
-        `http://localhost:3000/products/${id}`,
+        `https://neil-backend-1.onrender.com/products/${id}`,
         { group_visibility: payload },
         {
           headers: { Authorization: `Bearer ${accessToken}` },
@@ -162,7 +162,7 @@ function SpecProduct() {
                     <Button variant="danger" onClick={async (e) => {
                       e.preventDefault();
                       if (window.confirm("Delete this product?")) {
-                        await axios.delete(`http://localhost:3000/products/${id}`, {
+                        await axios.delete(`https://neil-backend-1.onrender.com/products/${id}`, {
                           headers: { Authorization: `Bearer ${accessToken}` },
                         });
                         navigate(-1);

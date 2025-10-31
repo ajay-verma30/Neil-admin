@@ -16,7 +16,7 @@ function ProductList() {
       try {
         setLoading(true);
         setError("");
-        const res = await axios.get("http://localhost:3000/products/all-products", {
+        const res = await axios.get("https://neil-backend-1.onrender.com/products/all-products", {
           headers: { Authorization: `Bearer ${accessToken}` },
         });
         setProducts(res.data.products || []);

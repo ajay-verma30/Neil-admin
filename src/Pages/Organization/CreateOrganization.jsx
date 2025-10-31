@@ -39,7 +39,7 @@ function CreateOrganization() {
     setLoading(true);
     try {
       const res = await axios.post(
-        'http://localhost:3000/organization/new',
+        'https://neil-backend-1.onrender.com/organization/new',
         formData,
         {
           headers: {

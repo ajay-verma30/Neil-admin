@@ -1,13 +1,19 @@
 import React, { useContext } from "react";
 import { Navbar, Nav, Container, Dropdown, Badge } from "react-bootstrap";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faUserCircle, faPowerOff, faShoppingCart } from "@fortawesome/free-solid-svg-icons";
+import {
+  faUserCircle,
+  faPowerOff,
+  faShoppingCart,
+  faUser,
+  faBoxOpen, // ✅ added for Orders icon
+} from "@fortawesome/free-solid-svg-icons";
 import { AuthContext } from "../../context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import "./TopBar.css";
 
 function TopBar() {
-  const { logout, user, cartCount } = useContext(AuthContext); 
+  const { logout, user, cartCount } = useContext(AuthContext);
   const navigate = useNavigate();
 
   const handleLogout = async (e) => {
@@ -21,32 +27,36 @@ function TopBar() {
     }
   };
 
-const handleNavigation = () => {
-  const mode = localStorage.getItem("mode");
+  const handleNavigation = () => {
+    const mode = localStorage.getItem("mode");
 
-  if (user?.role === "Super Admin" || user?.role === "Admin" || user?.role === "Manager") {
-    if (mode === "shop") {
-      navigate("/products");
-    } else {
-      if (user?.role === "Super Admin") {
-        navigate("/admin/dashboard");
-      } else if (user?.role === "Admin" || user?.role === "Manager") {
-        navigate(`/${user?.org_id}/dashboard`);
+    if (user?.role === "Super Admin" || user?.role === "Admin" || user?.role === "Manager") {
+      if (mode === "shop") {
+        navigate("/products");
+      } else {
+        if (user?.role === "Super Admin") {
+          navigate("/admin/dashboard");
+        } else if (user?.role === "Admin" || user?.role === "Manager") {
+          navigate(`/${user?.org_id}/dashboard`);
+        }
       }
+    } else {
+      navigate("/products");
     }
-  } else {
-    navigate("/products");
-  }
-};
+  };
 
-
-
+  const handleProfileNav = () => navigate("/my-profile")
   const handleCartClick = () => navigate("/cart");
+  const handleOrdersClick = () => navigate("/orders"); 
 
   return (
     <Navbar bg="white" expand="lg" fixed="top" className="shadow-sm py-2 topbar">
       <Container fluid>
-        <Navbar.Brand onClick={handleNavigation} className="fw-bold text-primary" style={{ cursor: "pointer" }}>
+        <Navbar.Brand
+          onClick={handleNavigation}
+          className="fw-bold text-primary"
+          style={{ cursor: "pointer" }}
+        >
           Neil Prints & Services
         </Navbar.Brand>
 
@@ -80,6 +90,21 @@ const handleNavigation = () => {
               </Dropdown.Toggle>
 
               <Dropdown.Menu className="topbar-dropdown-menu">
+                {/* ✅ Added Orders option */}
+
+                <Dropdown.Item onClick={handleProfileNav}>
+                  <FontAwesomeIcon icon={faUser} className="me-2 text-primary" />
+                  My Profile
+                </Dropdown.Item>
+
+                <Dropdown.Divider/>
+                <Dropdown.Item onClick={handleOrdersClick}>
+                  <FontAwesomeIcon icon={faBoxOpen} className="me-2 text-primary" />
+                  Orders
+                </Dropdown.Item>
+
+                <Dropdown.Divider />
+
                 <Dropdown.Item onClick={handleLogout} className="text-danger">
                   <FontAwesomeIcon icon={faPowerOff} className="me-2" />
                   Logout

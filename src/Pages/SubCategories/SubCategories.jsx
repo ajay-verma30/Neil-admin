@@ -36,7 +36,7 @@ function SubCategories() {
     setLoading(true);
     setError(null);
     try {
-      const res = await axios.get("http://localhost:3000/sub-categories/all", {
+      const res = await axios.get("https://neil-backend-1.onrender.com/sub-categories/all", {
         headers: { Authorization: `Bearer ${accessToken}` },
       });
       setSubCategories(res.data.subCategories || []);
@@ -68,7 +68,7 @@ function SubCategories() {
 
     try {
       await axios.post(
-        "http://localhost:3000/sub-categories/new",
+        "https://neil-backend-1.onrender.com/sub-categories/new",
         { title, category, org_id },
         { headers: { Authorization: `Bearer ${accessToken}` } }
       );
@@ -87,7 +87,7 @@ function SubCategories() {
       return;
 
     try {
-      await axios.delete(`http://localhost:3000/subcategories/${id}`, {
+      await axios.delete(`https://neil-backend-1.onrender.com/subcategories/${id}`, {
         headers: { Authorization: `Bearer ${accessToken}` },
       });
       setSubCategories((prev) => prev.filter((sc) => sc.id !== id));

@@ -41,6 +41,7 @@ function UserProduct() {
 
   const allSizes = Object.keys(quantities);
 
+  // 🔘 Placement Coordinates (relative to image)
   const placementPositions = {
     front: { top: 30, left: 45, width: 20, height: 20 },
     back: { top: 38, left: 50, width: 20, height: 20 },
@@ -53,7 +54,7 @@ function UserProduct() {
     "lower front": { top: 74, left: 48, width: 20, height: 15 },
   };
 
-  // Fetch product + logos
+  // 🟢 Fetch Product + Logos
   useEffect(() => {
     if (!id || !accessToken) return;
     const fetchData = async () => {
@@ -61,7 +62,7 @@ function UserProduct() {
         setLoading(true);
         setError("");
 
-        const prodRes = await axios.get(`http://localhost:3000/products/${id}`, {
+        const prodRes = await axios.get(`https://neil-backend-1.onrender.com/products/${id}`, {
           headers: { Authorization: `Bearer ${accessToken}` },
         });
         const prod = prodRes.data.product;
@@ -80,7 +81,7 @@ function UserProduct() {
           setMainImageUrl(prod.images[0].url);
         }
 
-        const logosRes = await axios.get(`http://localhost:3000/logos/all-logos`, {
+        const logosRes = await axios.get(`https://neil-backend-1.onrender.com/logos/all-logos`, {
           headers: { Authorization: `Bearer ${accessToken}` },
         });
         const valid = logosRes.data.filter((l) => l.variants?.length > 0);
@@ -101,19 +102,20 @@ function UserProduct() {
   }, [id, accessToken]);
 
   const productVariant =
-    product?.variants?.find((v) => String(v.id) === String(selectedVariantId)) || null;
+    product?.variants?.find((p) => String(p.id) === String(selectedVariantId)) || null;
 
   const selectedLogo =
     logos.find((l) => String(l.id) === String(selectedLogoId)) || null;
 
   const logoVariant =
-    selectedLogo?.variants?.find((v) => String(v.id) === String(selectedLogoVariantId)) || null;
+    selectedLogo?.variants?.find((l) => String(l.id) === String(selectedLogoVariantId)) || null;
 
   const viewPlacements =
     logoVariant?.placements?.filter(
       (p) => p.view.toLowerCase() === selectedView.toLowerCase()
     ) || [];
 
+  // 🟡 Update main product image based on view
   useEffect(() => {
     if (!productVariant) return;
     const img =
@@ -123,6 +125,7 @@ function UserProduct() {
     setMainImageUrl(img?.url || product?.images?.[0]?.url || "");
   }, [selectedView, productVariant, product]);
 
+  // Toggle placement selection
   const togglePlacement = (pid) => {
     setSelectedPlacementIds((prev) =>
       prev.includes(pid) ? prev.filter((p) => p !== pid) : [...prev, pid]
@@ -134,7 +137,7 @@ function UserProduct() {
     setQuantities((prev) => ({ ...prev, [size]: quantity }));
   };
 
-  // ✅ Add to Cart Handler (fixed)
+  // 🛒 Add to Cart
   const handleAddToCart = async () => {
     setMessage("");
     setIsProcessing(true);
@@ -171,7 +174,7 @@ function UserProduct() {
       formData.append("placement_id", selectedPlacementIds[0]);
       formData.append("preview", file);
 
-      const res = await axios.post("http://localhost:3000/customization/new", formData, {
+      const res = await axios.post("https://neil-backend-1.onrender.com/customization/new", formData, {
         headers: {
           Authorization: `Bearer ${accessToken}`,
           "Content-Type": "multipart/form-data",
@@ -180,9 +183,8 @@ function UserProduct() {
 
       const customization = res.data.customization;
 
-      // ✅ Use the uploaded preview instead of base image
       const imageUrl = customization.preview
-        ? `http://localhost:3000${customization.preview}`
+        ? `https://neil-backend-1.onrender.com${customization.preview}`
         : mainImageUrl;
 
       const cartItem = {
@@ -195,23 +197,17 @@ function UserProduct() {
         sizes: quantities,
       };
 
-      console.log("🛒 Adding to Cart:", cartItem);
       addToCart(cartItem);
-
       setMessage(`✅ Customization saved and added to cart.`);
     } catch (err) {
       console.error("Customization/Cart Error:", err);
-      const msg =
-        err.message.includes("Preview element") ||
-        err.response?.data?.message ||
-        "❌ Failed to save customization or add to cart.";
-      setMessage(msg);
+      setMessage(err.response?.data?.message || "❌ Failed to save customization or add to cart.");
     } finally {
       setIsProcessing(false);
     }
   };
 
-  // ✅ Loading / Error UI
+  // 🌀 Loading / Error UI
   if (loading)
     return (
       <div className="d-flex vh-100 justify-content-center align-items-center bg-light">
@@ -326,7 +322,7 @@ function UserProduct() {
                 {product.description || "No description available."}
               </p>
 
-              {/* Variants */}
+              {/* Product Variants */}
               {product.variants?.length > 0 && (
                 <Form.Group className="mb-3">
                   <Form.Label>Variant</Form.Label>
@@ -334,16 +330,16 @@ function UserProduct() {
                     value={selectedVariantId || ""}
                     onChange={(e) => setSelectedVariantId(e.target.value)}
                   >
-                    {product.variants.map((v) => (
-                      <option key={v.id} value={v.id}>
-                        {v.color} {v.size && `- ${v.size}`} {v.sku && `(${v.sku})`}
+                    {product.variants.map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {p.color} {p.size && `- ${p.size}`} {p.sku && `(${p.sku})`}
                       </option>
                     ))}
                   </Form.Select>
                 </Form.Group>
               )}
 
-              {/* View */}
+              {/* Views */}
               {productVariant?.images?.length > 0 && (
                 <Form.Group className="mb-3">
                   <Form.Label>View</Form.Label>
@@ -377,27 +373,37 @@ function UserProduct() {
               {/* Logo Variants */}
               {selectedLogo?.variants?.length > 0 && (
                 <div className="mb-3 d-flex flex-wrap gap-2">
-                  {selectedLogo.variants.map((v) => (
+                  {selectedLogo.variants.map((l) => (
                     <div
-                      key={v.id}
-                      onClick={() => setSelectedLogoVariantId(v.id)}
+                      key={l.id}
+                      onClick={() => setSelectedLogoVariantId(l.id)}
                       className={`p-1 border rounded ${
-                        v.id === selectedLogoVariantId
+                        l.id === selectedLogoVariantId
                           ? "border-primary bg-light"
                           : "border-secondary"
                       }`}
                       style={{ cursor: "pointer", width: "70px", textAlign: "center" }}
                     >
                       <img
-                        src={v.url}
-                        alt={v.color}
+                        src={l.url}
+                        alt={l.color}
                         style={{ width: "100%", height: "50px", objectFit: "contain" }}
                       />
-                      <small>{v.color}</small>
+                      <small>{l.color}</small>
                     </div>
                   ))}
                 </div>
               )}
+
+              {/* ⚠️ Warning for same color */}
+              {productVariant?.color &&
+                logoVariant?.color &&
+                productVariant.color.toLowerCase() === logoVariant.color.toLowerCase() && (
+                  <Alert variant="warning" className="small mt-2">
+                    ⚠️ The logo color <strong>{logoVariant.color}</strong> matches the product color{" "}
+                    <strong>{productVariant.color}</strong>. This may reduce visibility.
+                  </Alert>
+                )}
 
               {/* Placements */}
               {viewPlacements.length > 0 && (

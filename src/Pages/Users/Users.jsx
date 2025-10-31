@@ -59,7 +59,7 @@ const [searchTerm, setSearchTerm] = useState("");
       try {
         setLoading(true);
         const result = await axios.get(
-          "http://localhost:3000/users/all-users",
+          "https://neil-backend-1.onrender.com/users/all-users",
           {
             headers: {
               Authorization: `Bearer ${accessToken}`,
@@ -135,7 +135,7 @@ const addNewUser = () => {
 
     try {
       await axios.post(
-        "http://localhost:3000/users/bulk-upload",
+        "https://neil-backend-1.onrender.com/users/bulk-upload",
         formDataUpload,
         {
           headers: {
@@ -148,7 +148,7 @@ const addNewUser = () => {
       setShowBulkModal(false);
       setBulkFile(null);
       // Refresh users list
-      const result = await axios.get("http://localhost:3000/users/all-users", {
+      const result = await axios.get("https://neil-backend-1.onrender.com/users/all-users", {
         headers: {
           Authorization: `Bearer ${accessToken}`,
         },

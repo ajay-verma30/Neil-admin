@@ -35,7 +35,7 @@ function RegisterOrganization() {
 
     setLoading(true);
     try {
-      const res = await axios.post("http://localhost:3000/organization/new", formData, {
+      const res = await axios.post("https://neil-backend-1.onrender.com/organization/new", formData, {
         withCredentials: true,
       });
 

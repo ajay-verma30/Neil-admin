@@ -99,7 +99,7 @@ function CreateLogos() {
       formData.append("placements", JSON.stringify(selectedPlacements));
       variants.forEach(v => formData.append("logos", v.file));
 
-      const res = await axios.post("http://localhost:3000/logos/new-logo", formData, {
+      const res = await axios.post("https://neil-backend-1.onrender.com/logos/new-logo", formData, {
         headers: {
           Authorization: `Bearer ${accessToken}`,
           "Content-Type": "multipart/form-data",

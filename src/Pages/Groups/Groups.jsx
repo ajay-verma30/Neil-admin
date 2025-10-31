@@ -4,75 +4,108 @@ import TopBar from '../../Components/TopBar/TopBar';
 import Sidebar from '../../Components/SideBar/SideBar';
 import { AuthContext } from '../../context/AuthContext';
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import {
-  faPlus
-} from "@fortawesome/free-solid-svg-icons";
+import { faPlus } from "@fortawesome/free-solid-svg-icons";
 import axios from 'axios';
 
 function Groups() {
-  const { accessToken,user } = useContext(AuthContext);
+  const { accessToken, user } = useContext(AuthContext);
   const [groups, setGroups] = useState([]);
   const [loading, setLoading] = useState(false);
   const [alert, setAlert] = useState(null);
   const [showAddGroupModal, setShowAddGroupModal] = useState(false);
   const [newGroupTitle, setNewGroupTitle] = useState('');
   const [submitting, setSubmitting] = useState(false);
+
+  // 🆕 Org dropdown state
+  const [orgs, setOrgs] = useState([]);
+  const [selectedOrgId, setSelectedOrgId] = useState('');
+
   const fetchGroups = useCallback(async () => {
     try {
       setLoading(true);
-      const res = await axios.get('http://localhost:3000/groups/all');
+      const res = await axios.get('https://neil-backend-1.onrender.com/groups/all', {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
       setGroups(res.data.groups || []);
-      if (alert && alert.type === 'success') setAlert(null); 
+      if (alert && alert.type === 'success') setAlert(null);
     } catch (error) {
-      setAlert({ type: 'danger', message: error.response?.data?.message || 'Failed to fetch groups.' });
+      setAlert({
+        type: 'danger',
+        message: error.response?.data?.message || 'Failed to fetch groups.',
+      });
     } finally {
       setLoading(false);
     }
-  }, [alert]);
-
+  }, [accessToken, alert]);
 
   useEffect(() => {
     if (accessToken) fetchGroups();
-  }, [accessToken, fetchGroups]); 
-  const handleShowModal = () => {
-    setShowAddGroupModal(true);
-    setNewGroupTitle(''); 
-    setAlert(null); 
-  }
-  const handleCloseModal = () => setShowAddGroupModal(false);
+  }, [accessToken, fetchGroups]);
 
-  const handleAddGroupChange = (e) => {
-    setNewGroupTitle(e.target.value);
-  }
+  // 🆕 Fetch org list for Super Admin
+  const fetchOrganizations = async () => {
+    try {
+      const res = await axios.get('https://neil-backend-1.onrender.com/organization/organizations-list', {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+      if (res.data.success) {
+        setOrgs(res.data.data);
+      }
+    } catch (err) {
+      console.error('Error fetching organizations:', err);
+      setOrgs([]);
+    }
+  };
+
+  const handleShowModal = async () => {
+    setShowAddGroupModal(true);
+    setNewGroupTitle('');
+    setAlert(null);
+    setSelectedOrgId('');
+    if (user?.role === 'Super Admin') {
+      await fetchOrganizations(); // 🆕 Only fetch orgs if Super Admin
+    }
+  };
+
+  const handleCloseModal = () => setShowAddGroupModal(false);
 
   const handleCreateGroup = async (e) => {
     e.preventDefault();
     const title = newGroupTitle.trim();
-
     if (!title) {
-        setAlert({ type: 'warning', message: 'Group Title cannot be empty.' });
-        return;
+      setAlert({ type: 'warning', message: 'Group Title cannot be empty.' });
+      return;
+    }
+
+    // 🆕 Determine org ID
+    const orgId = user.role === 'Super Admin' ? selectedOrgId : user.org_id;
+    if (!orgId) {
+      setAlert({ type: 'warning', message: 'Please select an organization.' });
+      return;
     }
 
     setSubmitting(true);
     setAlert(null);
 
     try {
-      const orgId = user.org_id;
-        const payload = { title,org_id:orgId };
-        const res = await axios.post('http://localhost:3000/groups/new', payload);
-        handleCloseModal();
-        setAlert({ type: 'success', message: `Group "${title}" created successfully!` });
-        await fetchGroups();
+      const payload = { title, org_id: orgId };
+      const res = await axios.post('https://neil-backend-1.onrender.com/groups/new', payload, {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
 
+      handleCloseModal();
+      setAlert({ type: 'success', message: `Group "${title}" created successfully!` });
+      await fetchGroups();
     } catch (error) {
-        console.error('Error creating group:', error.response?.data?.message || error.message);
-        setAlert({ type: 'warning', message: error.response?.data?.message || 'An unexpected error occurred during creation.' }); 
+      console.error('Error creating group:', error.response?.data?.message || error.message);
+      setAlert({
+        type: 'warning',
+        message: error.response?.data?.message || 'An unexpected error occurred during creation.',
+      });
     } finally {
-        setSubmitting(false);
+      setSubmitting(false);
     }
   };
-
 
   return (
     <>
@@ -82,24 +115,20 @@ function Groups() {
           <Sidebar />
         </Col>
         <Col xs={10} md={10}>
+          <div className="form-box p-3">
+            <div className="d-flex justify-content-between align-items-center mb-4">
+              <h4 className="mb-0">Groups List</h4>
 
-          <div className=" form-box  p-3">
-           <div className="d-flex justify-content-between align-items-center mb-4">
-  <h4 className="mb-0">Groups List</h4>
-  {user?.role !== "Super Admin" && (
-    <div className="d-flex gap-2">
-      <Button
-        variant="primary"
-        size="sm"
-        onClick={handleShowModal}
-      >
-        <FontAwesomeIcon icon={faPlus} className="me-2" />
-        Add Group
-      </Button>
-    </div>
-  )}
-</div>
- 
+              {/* 🆕 Super Admins can now add groups */}
+              {["Super Admin", "Admin", "Manager"].includes(user?.role) && (
+                <div className="d-flex gap-2">
+                  <Button variant="primary" size="sm" onClick={handleShowModal}>
+                    <FontAwesomeIcon icon={faPlus} className="me-2" />
+                    Add Group
+                  </Button>
+                </div>
+              )}
+            </div>
 
             {alert && alert.type !== 'warning' && (
               <Alert
@@ -150,45 +179,76 @@ function Groups() {
           </div>
         </Col>
       </Row>
-      
-      {/* NEW: Add Group Modal component */}
+
+      {/* 🆕 Add Group Modal */}
       <Modal show={showAddGroupModal} onHide={handleCloseModal} centered>
         <Modal.Header closeButton>
-            <Modal.Title>Add New Group</Modal.Title>
+          <Modal.Title>Add New Group</Modal.Title>
         </Modal.Header>
         <Form onSubmit={handleCreateGroup}>
-            <Modal.Body>
-                {alert && alert.type === 'warning' && (
-                    <Alert variant="warning" onClose={() => setAlert(null)} dismissible className="mb-3">
-                        {alert.message}
-                    </Alert>
-                )}
-                
-                <Form.Group className="mb-3" controlId="formGroupTitle">
-                    <Form.Label>Title</Form.Label> 
-                    <Form.Control
-                        type="text"
-                        placeholder="Enter group name (e.g., Sales Team)"
-                        value={newGroupTitle}
-                        onChange={handleAddGroupChange}
-                        disabled={submitting}
-                        required
-                    />
-                </Form.Group>
-            </Modal.Body>
-            <Modal.Footer>
-                <Button variant="secondary" onClick={handleCloseModal} disabled={submitting}>
-                    Cancel
-                </Button>
-                <Button variant="primary" type="submit" disabled={submitting || !newGroupTitle.trim()}>
-                    {submitting ? (
-                        <>
-                            <Spinner animation="border" size="sm" className="me-2" />
-                            Creating...
-                        </>
-                    ) : 'Create Group'}
-                </Button>
-            </Modal.Footer>
+          <Modal.Body>
+            {alert && alert.type === 'warning' && (
+              <Alert
+                variant="warning"
+                onClose={() => setAlert(null)}
+                dismissible
+                className="mb-3"
+              >
+                {alert.message}
+              </Alert>
+            )}
+
+            {/* 🆕 Org Dropdown for Super Admin */}
+            {user.role === 'Super Admin' && (
+              <Form.Group className="mb-3" controlId="formGroupOrg">
+                <Form.Label>Select Organization</Form.Label>
+                <Form.Select
+                  value={selectedOrgId}
+                  onChange={(e) => setSelectedOrgId(e.target.value)}
+                  disabled={submitting}
+                  required
+                >
+                  <option value="">-- Select Organization --</option>
+                  {orgs.map((org) => (
+                    <option key={org.id} value={org.id}>
+                      {org.title}
+                    </option>
+                  ))}
+                </Form.Select>
+              </Form.Group>
+            )}
+
+            <Form.Group className="mb-3" controlId="formGroupTitle">
+              <Form.Label>Group Title</Form.Label>
+              <Form.Control
+                type="text"
+                placeholder="Enter group name (e.g., Sales Team)"
+                value={newGroupTitle}
+                onChange={(e) => setNewGroupTitle(e.target.value)}
+                disabled={submitting}
+                required
+              />
+            </Form.Group>
+          </Modal.Body>
+          <Modal.Footer>
+            <Button variant="secondary" onClick={handleCloseModal} disabled={submitting}>
+              Cancel
+            </Button>
+            <Button
+              variant="primary"
+              type="submit"
+              disabled={submitting || !newGroupTitle.trim()}
+            >
+              {submitting ? (
+                <>
+                  <Spinner animation="border" size="sm" className="me-2" />
+                  Creating...
+                </>
+              ) : (
+                'Create Group'
+              )}
+            </Button>
+          </Modal.Footer>
         </Form>
       </Modal>
     </>

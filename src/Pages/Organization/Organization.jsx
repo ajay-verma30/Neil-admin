@@ -84,7 +84,7 @@ function Organization() {
             setErrorMsg("");
 
             try {
-                const response = await axios.get('http://localhost:3000/organization/all-organizations', {
+                const response = await axios.get('https://neil-backend-1.onrender.com/organization/all-organizations', {
                     headers: {
                         "Authorization": `Bearer ${accessToken}`
                     }

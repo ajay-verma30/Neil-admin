@@ -72,7 +72,7 @@ const clientCleanup = () => {
   const refreshAccessToken = async () => {
     try {
       const res = await axios.post(
-        "http://localhost:3000/users/refresh",
+        "https://neil-backend-1.onrender.com/users/refresh",
         {},
         { withCredentials: true }
       );
@@ -91,7 +91,7 @@ const clientCleanup = () => {
   // Logout
   const logout = async () => {
     try {
-      await axios.post("http://localhost:3000/users/logout", {}, { withCredentials: true });
+      await axios.post("https://neil-backend-1.onrender.com/users/logout", {}, { withCredentials: true });
     } catch (err) {
       console.error("Logout error (server cleanup failed):", err);
     }
@@ -163,7 +163,7 @@ const clientCleanup = () => {
   const login = async (email, password) => {
   try {
     const res = await axios.post(
-      "http://localhost:3000/users/login",
+      "https://neil-backend-1.onrender.com/users/login",
       { email, password },
       { withCredentials: true }
     );

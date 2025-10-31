@@ -24,8 +24,8 @@ import {
   faChevronRight,
 } from "@fortawesome/free-solid-svg-icons";
 
-const API_BASE_URL = "http://localhost:3000/users";
-const GROUPS_API_URL = "http://localhost:3000/groups";
+const API_BASE_URL = "https://neil-backend-1.onrender.com/users";
+const GROUPS_API_URL = "https://neil-backend-1.onrender.com/groups";
 
 function SpecificUser() {
   const { org_id, id: userId } = useParams();

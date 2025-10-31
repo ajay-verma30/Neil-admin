@@ -65,7 +65,7 @@ function Dashboard() {
   const fetchOrganizations = useCallback(async () => {
     if (user?.role === "Super Admin" && accessToken) {
       try {
-        const res = await axios.get("http://localhost:3000/organization/organizations-list", {
+        const res = await axios.get("https://neil-backend-1.onrender.com/organization/organizations-list", {
           headers: { Authorization: `Bearer ${accessToken}` },
         });
         setOrgList(res.data.data || []);
@@ -93,10 +93,10 @@ function Dashboard() {
       const query = new URLSearchParams(params).toString();
 
       const [userRes, productRes, logoRes, orderRes] = await Promise.all([
-        axios.get(`http://localhost:3000/users/users-summary?${query}`, { headers }),
-        axios.get(`http://localhost:3000/products/products-summary?${query}`, { headers }),
-        axios.get(`http://localhost:3000/logos/logo-summary?${query}`, { headers }),
-        axios.get(`http://localhost:3000/checkout/order-summary?${query}`, { headers }),
+        axios.get(`https://neil-backend-1.onrender.com/users/users-summary?${query}`, { headers }),
+        axios.get(`https://neil-backend-1.onrender.com/products/products-summary?${query}`, { headers }),
+        axios.get(`https://neil-backend-1.onrender.com/logos/logo-summary?${query}`, { headers }),
+        axios.get(`https://neil-backend-1.onrender.com/checkout/order-summary?${query}`, { headers }),
       ]);
 
       setTotals({
@@ -123,7 +123,7 @@ function Dashboard() {
       if (filters.timeframe) params.timeframe = filters.timeframe;
       const query = new URLSearchParams(params).toString();
 
-      const res = await axios.get(`http://localhost:3000/checkout/order-trends?${query}`, { headers });
+      const res = await axios.get(`https://neil-backend-1.onrender.com/checkout/order-trends?${query}`, { headers });
       setOrderTrends(res.data.data || []);
     } catch (err) {
       console.error("❌ Error fetching order trends:", err);
@@ -140,7 +140,7 @@ function Dashboard() {
       if (filters.timeframe) params.timeframe = filters.timeframe;
       const query = new URLSearchParams(params).toString();
 
-      const res = await axios.get(`http://localhost:3000/checkout/order-status-summary?${query}`, {
+      const res = await axios.get(`https://neil-backend-1.onrender.com/checkout/order-status-summary?${query}`, {
         headers,
       });
       setOrderStatusSummary(res.data.data || []);
@@ -181,7 +181,11 @@ function Dashboard() {
     },
     scales: {
       x: { title: { display: true, text: "Period" } },
-      y: { title: { display: true, text: "Orders" }, beginAtZero: true },
+      y: { title: { display: true, text: "Orders" }, beginAtZero: true,
+     ticks: {
+        stepSize: 1, 
+        precision: 0, 
+      }, },
     },
   };
 

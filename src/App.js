@@ -27,6 +27,8 @@ import Cart from './Users/Cart';
 import Orders from './Users/Orders';
 import ModePrompt from './context/ModePrompt'; 
 import FullOrders from './Pages/Orders/Orders'
+import SpecificOrder from './Pages/Orders/SpecificOrder';
+import MyProfile from './Users/MyProfile';
 
 function AppRoutes() {
   const { user } = useContext(AuthContext);
@@ -56,6 +58,7 @@ function AppRoutes() {
           <Route path='/admin/logos' element={<ProtectedRoute><Logos /></ProtectedRoute>} />
           <Route path='/admin/logos/new-logo' element={<ProtectedRoute><CreateLogos /></ProtectedRoute>} />
           <Route path='/admin/orders' element={<ProtectedRoute><FullOrders /></ProtectedRoute>} />
+          <Route path='/admin/orders/:id' element={<ProtectedRoute><SpecificOrder /></ProtectedRoute>} />
         </>
       )}
 
@@ -69,12 +72,14 @@ function AppRoutes() {
           <Route path='/:org_id/groups' element={<ProtectedRoute><Groups /></ProtectedRoute>} />
           <Route path='/:org_id/organization_details' element={<ProtectedRoute><SpecificOrganization /></ProtectedRoute>} />
           <Route path='/:org_id/products' element={<ProtectedRoute><Products /></ProtectedRoute>} />
-          <Route path='/:org_id/orders' element={<ProtectedRoute><Users /></ProtectedRoute>} />
+          {/* <Route path='/:org_id/orders' element={<ProtectedRoute><Users /></ProtectedRoute>} /> */}
           <Route path='/:org_id/products/new' element={<ProtectedRoute><CreateProducts /></ProtectedRoute>} />
           <Route path='/:org_id/sub-categories' element={<ProtectedRoute><SubCategories /></ProtectedRoute>} />
           <Route path='/:org_id/products/:id' element={<ProtectedRoute><SpecificProduct /></ProtectedRoute>} />
           <Route path='/:org_id/logos' element={<ProtectedRoute><Logos /></ProtectedRoute>} />
           <Route path='/:org_id/logos/new-logo' element={<ProtectedRoute><CreateLogos /></ProtectedRoute>} />
+          <Route path='/:org_id/org_orders' element={<ProtectedRoute><FullOrders /></ProtectedRoute>} />
+          <Route path='/:org_id/orders/:id' element={<ProtectedRoute><SpecificOrder /></ProtectedRoute>} />
         </>
       )}
 
@@ -85,6 +90,7 @@ function AppRoutes() {
           <Route path='/products/:id' element={<ProtectedRoute><UserProduct /></ProtectedRoute>} />
           <Route path='/cart' element={<ProtectedRoute><Cart /></ProtectedRoute>} />
           <Route path='/orders' element={<ProtectedRoute><Orders /></ProtectedRoute>} />
+          <Route path='/my-profile' element={<ProtectedRoute><MyProfile /></ProtectedRoute>} />
         </>
       )}
     </Routes>
