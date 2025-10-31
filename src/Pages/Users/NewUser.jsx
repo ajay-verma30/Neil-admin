@@ -52,7 +52,6 @@ function NewUser() {
                 org_id: user.role === 'Super Admin' ? '' : (orgIdFromParams || user.org_id)
             })
         } catch (err) {
-            console.error(err)
             setAlert({
                 type: 'danger',
                 message: err.response?.data?.message || 'Failed to create user'

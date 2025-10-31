@@ -62,7 +62,6 @@ function SpecificUser() {
         setUser(null);
       }
     } catch (err) {
-      console.error("Error fetching user:", err.response?.data || err.message);
       if (err.response?.status === 404)
         setError("The requested user could not be found.");
       else if (err.response?.status === 403)
@@ -92,10 +91,6 @@ function SpecificUser() {
         });
         if (res.data.groups) setGroups(res.data.groups);
       } catch (err) {
-        console.error(
-          "Error fetching groups:",
-          err.response?.data || err.message
-        );
       }
     };
     if (accessToken) fetchGroups();
@@ -122,7 +117,6 @@ function SpecificUser() {
       await fetchUser();
       setTimeout(() => setSuccessMessage(null), 3000);
     } catch (err) {
-      console.error("Error adding group:", err);
       setError("Failed to add group to user.");
     } finally {
       setAddingGroup(false);
@@ -147,7 +141,6 @@ function SpecificUser() {
       await fetchUser(); // Refresh user data
       setTimeout(() => setSuccessMessage(null), 3000);
     } catch (err) {
-      console.error("Error removing group:", err);
       setError("Failed to remove group from user.");
     }
   };
@@ -170,7 +163,6 @@ function SpecificUser() {
         navigate(`/admin/users`);
       }
     } catch (err) {
-      console.error("Error deleting user:", err.response?.data || err.message);
       setError("Failed to delete the user. Please try again.");
       setShowDeleteModal(false);
     } finally {
@@ -192,7 +184,6 @@ function SpecificUser() {
     setSuccessMessage(`User marked as ${newStatus ? "active" : "inactive"}.`);
     setTimeout(() => setSuccessMessage(null), 3000);
   } catch (err) {
-    console.error("Error toggling user status:", err);
     setError("Failed to update user status. Please try again.");
   }
 };

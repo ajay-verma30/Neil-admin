@@ -42,7 +42,6 @@ function SpecificOrganization() {
       });
       setOrg(res.data.organization);
     } catch (err) {
-      console.error("Failed to fetch organization:", err);
       const backendMessage = err.response?.data?.message;
       if (backendMessage) {
     setErrorMsg(backendMessage);
@@ -73,7 +72,6 @@ function SpecificOrganization() {
       // Update local state
       setOrg((prev) => ({ ...prev, status: res.data.status }));
     } catch (err) {
-      console.error("Failed to update status:", err);
       alert(err.response?.data?.message || "Failed to update status");
     } finally {
       setUpdatingStatus(false);
@@ -90,7 +88,6 @@ function SpecificOrganization() {
     alert("Organization deleted successfully.");
     window.location.href = "/admin/organizations";
   } catch (err) {
-    console.error("Failed to delete organization:", err);
     alert(err.response?.data?.message || "Failed to delete organization");
   }
 };

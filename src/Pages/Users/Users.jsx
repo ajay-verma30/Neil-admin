@@ -68,7 +68,6 @@ const [searchTerm, setSearchTerm] = useState("");
         );
         setUsers(result.data.users);
       } catch (error) {
-        console.error("Error fetching users:", error);
         setAlert({ type: "danger", message: "Failed to load users list" });
       } finally {
         setLoading(false);
@@ -155,7 +154,6 @@ const addNewUser = () => {
       });
       setUsers(result.data.users);
     } catch (error) {
-      console.error("Error uploading bulk users:", error);
       setAlert({
         type: "danger",
         message: error.response?.data?.message || "Failed to upload users",

@@ -49,7 +49,6 @@ function SubCategories() {
       );
       setSubCategories(res.data.subCategories || []);
     } catch (err) {
-      console.error("Error fetching sub-categories:", err);
       setError(
         err.response?.data?.message ||
           "An unexpected error occurred while fetching sub-categories."
@@ -85,7 +84,6 @@ function SubCategories() {
       setShowModal(false);
       setNewSubCategory({ title: "", category: "" });
     } catch (err) {
-      console.error("Error adding sub-category:", err);
       alert(err.response?.data?.message || "Failed to add sub-category.");
     }
   };
@@ -101,7 +99,6 @@ function SubCategories() {
       );
       setSubCategories((prev) => prev.filter((sc) => sc.id !== id));
     } catch (err) {
-      console.error("Error deleting sub-category:", err);
       alert(err.response?.data?.message || "Failed to delete sub-category.");
     }
   };

@@ -21,7 +21,6 @@ function ProductList() {
         });
         setProducts(res.data.products || []);
       } catch (err) {
-        console.error("Error fetching products:", err);
         if (err.response) {
           setError(err.response.data.message || "Failed to fetch products.");
         } else if (err.request) {

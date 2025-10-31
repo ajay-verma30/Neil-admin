@@ -103,8 +103,6 @@ function Organization() {
         );
         setOrganizations(response.data.organizations);
       } catch (err) {
-        console.error("Failed to fetch organizations:", err);
-
         if (err.response) {
           if (err.response.status === 404) {
             setErrorMsg(err.response.data.message || "No organizations found yet.");

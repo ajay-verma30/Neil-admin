@@ -59,7 +59,7 @@ function SpecProduct() {
         setGroups(allGroups);
         setGroupVisibility(mergedVisibility);
       } catch (err) {
-        console.error("Error fetching product:", err);
+
         setError("Failed to fetch product details.");
       } finally {
         setLoading(false);
@@ -94,7 +94,6 @@ function SpecProduct() {
       );
       alert("Group visibility updated successfully!");
     } catch (err) {
-      console.error("Error updating visibility:", err);
       alert("Failed to update visibility");
     }
   };

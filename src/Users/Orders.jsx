@@ -18,10 +18,8 @@ function Orders() {
       const res = await axios.get("https://neil-backend-1.onrender.com/checkout/all", {
         headers: { Authorization: `Bearer ${accessToken}` },
       });
-      console.log(res);
       setOrders(res.data.orders || []);
     } catch (err) {
-      console.error("❌ Error fetching orders:", err);
       setError("Failed to load orders.");
     } finally {
       setLoading(false);

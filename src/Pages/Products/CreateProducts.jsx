@@ -66,7 +66,6 @@ function CreateProducts() {
           res.data.groups.map((g) => ({ group_id: g.id, is_visible: false }))
         );
       } catch (err) {
-        console.error("Failed to fetch groups:", err);
       }
     };
     fetchGroups();
@@ -117,7 +116,6 @@ function CreateProducts() {
       setSubCategories(res.data.subCategories || []);
       setSelectedSubCategory("");
     } catch (err) {
-      console.error("Error fetching sub-categories:", err);
       setSubCategories([]);
     }
   };
@@ -186,7 +184,7 @@ function CreateProducts() {
       setSuccess(response.data.message || "Product added successfully!");
       resetForm();
     } catch (err) {
-      console.error("Add Product Error:", err);
+
       setError(err.response?.data?.message || "Something went wrong while adding the product.");
     } finally {
       setLoading(false);

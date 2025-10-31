@@ -92,7 +92,6 @@ function UserProduct() {
           setSelectedLogoVariantId(valid[0].variants[0].id);
         }
       } catch (err) {
-        console.error(err);
         setError(err.response?.data?.message || "Failed to load product.");
       } finally {
         setLoading(false);
@@ -200,7 +199,6 @@ function UserProduct() {
       addToCart(cartItem);
       setMessage(`✅ Customization saved and added to cart.`);
     } catch (err) {
-      console.error("Customization/Cart Error:", err);
       setMessage(err.response?.data?.message || "❌ Failed to save customization or add to cart.");
     } finally {
       setIsProcessing(false);

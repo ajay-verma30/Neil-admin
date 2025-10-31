@@ -42,7 +42,6 @@ function Products() {
 
         setProducts(res.data.products || []);
       } catch (error) {
-        console.error("Error fetching products:", error);
         setErr(
           error.response?.data?.message ||
             "Failed to fetch products. Please try again later."

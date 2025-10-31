@@ -17,8 +17,6 @@ import { useNavigate } from "react-router-dom";
 function Cart() {
   const { cart, removeFromCart, addToCart,user,accessToken } = useContext(AuthContext);
   const navigate = useNavigate();
-
-  console.log(user);
   const totalAmount = useMemo(() => {
     return cart
       ?.reduce(
@@ -57,7 +55,6 @@ const handleCheckout = async () => {
     cart.forEach((item) => removeFromCart(item.id));
     navigate("/orders");
   } catch (err) {
-    console.error("Checkout Error:", err);
 
     if (err.response?.status === 401) {
       alert("⚠️ Please login to continue checkout.");
