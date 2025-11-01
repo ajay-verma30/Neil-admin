@@ -58,13 +58,29 @@ function ProductList() {
   }
 
   // ✅ Empty state
-  if (products.length === 0) {
-    return (
-      <Container className="py-5 text-center">
-        <h5 className="text-muted">No products available.</h5>
-      </Container>
-    );
-  }
+// ✅ Empty state (beautiful UI banner)
+if (products.length === 0) {
+  return (
+    <Container
+      fluid
+      className="d-flex flex-column justify-content-center align-items-center min-vh-100 bg-light"
+    >
+      <div className="p-4 text-center bg-white shadow-sm rounded-3" style={{ maxWidth: 500 }}>
+        <img
+          src="https://illustrations.popsy.co/gray/product-empty-state.svg"
+          alt="No products"
+          className="mb-3"
+          style={{ width: "180px", opacity: 0.8 }}
+        />
+        <h4 className="fw-semibold text-secondary">No products found</h4>
+        <p className="text-muted mb-3">
+          There are no products yet.
+        </p>
+      </div>
+    </Container>
+  );
+}
+
 
   const productNav = (id)=>{
     navigate(`/products/${id}`)

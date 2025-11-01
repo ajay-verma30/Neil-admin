@@ -51,7 +51,6 @@ function CreateOrganization() {
 
       setSuccessMsg(res.data.message || 'Organization created successfully!');
       nav('/admin/organizations');
-
     } catch (err) {
       setErrorMsg(
         err.response?.data?.message ||
