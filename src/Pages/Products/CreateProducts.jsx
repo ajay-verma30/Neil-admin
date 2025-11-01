@@ -30,6 +30,7 @@ function CreateProducts() {
     color: "",
     size: "",
     sku: "",
+    price: "",
     images: { front: null, back: null, left: null, right: null },
   };
 
@@ -171,10 +172,11 @@ function CreateProducts() {
       });
 
       const variantsPayload = variants.map((v) => ({
-        color: v.color,
-        size: v.size,
-        sku: v.sku,
-      }));
+  color: v.color,
+  size: v.size,
+  sku: v.sku,
+  price: v.price, 
+}));
       data.append("variants", JSON.stringify(variantsPayload));
 
       const response = await axios.post("https://neil-backend-1.onrender.com/products/new", data, {
@@ -313,11 +315,67 @@ function CreateProducts() {
                 {variants.map((variant, index) => (
                   <div key={index} className="variant-row border p-3 mb-3 rounded">
                     <Row className="align-items-end mb-3">
-                      <Col md={3}><Form.Group><Form.Label>Color</Form.Label><Form.Control name="color" value={variant.color} onChange={(e) => handleVariantChange(index, e)} /></Form.Group></Col>
-                      <Col md={3}><Form.Group><Form.Label>Size</Form.Label><Form.Control name="size" value={variant.size} onChange={(e) => handleVariantChange(index, e)} /></Form.Group></Col>
-                      <Col md={4}><Form.Group><Form.Label>Variant SKU (Required)</Form.Label><Form.Control name="sku" value={variant.sku} onChange={(e) => handleVariantChange(index, e)} required /></Form.Group></Col>
-                      <Col md={2}><Button variant="danger" size="sm" onClick={() => removeVariant(index)} disabled={variants.length === 1}>Remove</Button></Col>
-                    </Row>
+  <Col md={3}>
+    <Form.Group>
+      <Form.Label>Color</Form.Label>
+      <Form.Control
+        name="color"
+        value={variant.color}
+        onChange={(e) => handleVariantChange(index, e)}
+      />
+    </Form.Group>
+  </Col>
+
+  <Col md={2}>
+    <Form.Group>
+      <Form.Label>Size</Form.Label>
+      <Form.Control
+        name="size"
+        value={variant.size}
+        onChange={(e) => handleVariantChange(index, e)}
+      />
+    </Form.Group>
+  </Col>
+
+  <Col md={3}>
+    <Form.Group>
+      <Form.Label>Variant SKU (Required)</Form.Label>
+      <Form.Control
+        name="sku"
+        value={variant.sku}
+        onChange={(e) => handleVariantChange(index, e)}
+        required
+      />
+    </Form.Group>
+  </Col>
+
+  <Col md={2}>
+    <Form.Group>
+      <Form.Label>Price</Form.Label>
+      <Form.Control
+        type="number"
+        name="price"
+        step="0.01"
+        min="0"
+        value={variant.price}
+        onChange={(e) => handleVariantChange(index, e)}
+        placeholder="e.g. 499"
+      />
+    </Form.Group>
+  </Col>
+
+  <Col md={2}>
+    <Button
+      variant="danger"
+      size="sm"
+      onClick={() => removeVariant(index)}
+      disabled={variants.length === 1}
+    >
+      Remove
+    </Button>
+  </Col>
+</Row>
+
 
                     <Row className="mb-3">
                       {IMAGE_TYPES.map((type) => (

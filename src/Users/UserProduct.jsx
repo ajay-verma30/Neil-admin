@@ -54,6 +54,25 @@ function UserProduct() {
     "lower front": { top: 74, left: 48, width: 20, height: 15 },
   };
 
+  const SIZE_PRICE_MAP = {
+  xs: 0,
+  s: 1,
+  m: 2,
+  l: 3,
+  xl: 4,
+  xxl: 5,
+};
+
+const basePrice = Number(productVariant?.price ?? product.price);
+
+let totalPrice = 0;
+Object.entries(quantities).forEach(([size, qty]) => {
+  if (qty > 0) {
+    const sizeAdj = SIZE_PRICE_MAP[size.toLowerCase()] || 0;
+    totalPrice += (basePrice + sizeAdj) * qty;
+  }
+});
+
   // 🟢 Fetch Product + Logos
   useEffect(() => {
     if (!id || !accessToken) return;
@@ -186,15 +205,16 @@ function UserProduct() {
         ? `https://neil-backend-1.onrender.com${customization.preview}`
         : mainImageUrl;
 
-      const cartItem = {
-        id: customization.id,
-        product_id: product.id,
-        title: product.title,
-        image: imageUrl,
-        quantity: totalQuantity,
-        price: product.price,
-        sizes: quantities,
-      };
+     const cartItem = {
+  id: customization.id,
+  product_id: product.id,
+  title: product.title,
+  image: imageUrl,
+  quantity: totalQuantity,
+  unit_price: basePrice,
+  sizes: quantities,
+  total_price: totalPrice,
+};
 
       addToCart(cartItem);
       setMessage(`✅ Customization saved and added to cart.`);
@@ -243,7 +263,6 @@ function UserProduct() {
         </Button>
 
         <Row>
-          {/* =============== Product Preview =============== */}
           <Col md={5}>
             <Card className="shadow-sm border-0">
               <div
@@ -315,7 +334,9 @@ function UserProduct() {
                 {product.category}
                 {product.sub_cat && ` > ${product.sub_cat}`}
               </p>
-              <h5 className="text-primary mb-2">${product.price}</h5>
+              <h5 className="text-primary mb-2">
+  ${productVariant?.price ?? product.price}
+</h5>
               <p className="text-secondary small">
                 {product.description || "No description available."}
               </p>
@@ -330,8 +351,9 @@ function UserProduct() {
                   >
                     {product.variants.map((p) => (
                       <option key={p.id} value={p.id}>
-                        {p.color} {p.size && `- ${p.size}`} {p.sku && `(${p.sku})`}
-                      </option>
+  {p.color} {p.size && `- ${p.size}`} {p.sku && `(${p.sku})`}
+  {p.price ? ` — $${p.price}` : ""}
+</option>
                     ))}
                   </Form.Select>
                 </Form.Group>
@@ -448,6 +470,15 @@ function UserProduct() {
                   </Row>
                 </Form>
               </div>
+              <div className="mt-3">
+  <strong>Total Price: </strong>
+  ${Object.entries(quantities)
+    .reduce((sum, [size, qty]) => {
+      const sizeAdj = SIZE_PRICE_MAP[size.toLowerCase()] || 0;
+      return sum + (Number(productVariant?.price ?? product.price) + sizeAdj) * qty;
+    }, 0)
+    .toFixed(2)}
+</div>
 
               {/* Add to Cart */}
               <div className="d-flex gap-2 mt-4">
