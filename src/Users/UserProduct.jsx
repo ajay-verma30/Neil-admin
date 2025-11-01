@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useContext } from "react";
+import React, { useEffect, useState, useContext, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
 import html2canvas from "html2canvas";
@@ -55,23 +55,45 @@ function UserProduct() {
   };
 
   const SIZE_PRICE_MAP = {
-  xs: 0,
-  s: 1,
-  m: 2,
-  l: 3,
-  xl: 4,
-  xxl: 5,
-};
+    xs: 0,
+    s: 1,
+    m: 2,
+    l: 3,
+    xl: 4,
+    xxl: 5,
+  };
 
-const basePrice = Number(productVariant?.price ?? product.price);
+  // Derived state for selected product/logo variants
+  const productVariant =
+    product?.variants?.find((p) => String(p.id) === String(selectedVariantId)) || null;
 
-let totalPrice = 0;
-Object.entries(quantities).forEach(([size, qty]) => {
-  if (qty > 0) {
-    const sizeAdj = SIZE_PRICE_MAP[size.toLowerCase()] || 0;
-    totalPrice += (basePrice + sizeAdj) * qty;
-  }
-});
+  const selectedLogo =
+    logos.find((l) => String(l.id) === String(selectedLogoId)) || null;
+
+  const logoVariant =
+    selectedLogo?.variants?.find((l) => String(l.id) === String(selectedLogoVariantId)) || null;
+
+  const viewPlacements =
+    logoVariant?.placements?.filter(
+      (p) => p.view.toLowerCase() === selectedView.toLowerCase()
+    ) || [];
+
+  // 💰 Price Calculation (use useMemo for correct dependencies and performance)
+  const { basePrice, totalPrice } = useMemo(() => {
+    // basePrice needs to use the product data available when this runs
+    const price = Number(productVariant?.price ?? product?.price ?? 0);
+
+    let calculatedTotalPrice = 0;
+    Object.entries(quantities).forEach(([size, qty]) => {
+      if (qty > 0) {
+        const sizeAdj = SIZE_PRICE_MAP[size.toLowerCase()] || 0;
+        calculatedTotalPrice += (price + sizeAdj) * qty;
+      }
+    });
+
+    return { basePrice: price, totalPrice: calculatedTotalPrice };
+  }, [product, productVariant, quantities, SIZE_PRICE_MAP]);
+
 
   // 🟢 Fetch Product + Logos
   useEffect(() => {
@@ -119,19 +141,6 @@ Object.entries(quantities).forEach(([size, qty]) => {
     fetchData();
   }, [id, accessToken]);
 
-  const productVariant =
-    product?.variants?.find((p) => String(p.id) === String(selectedVariantId)) || null;
-
-  const selectedLogo =
-    logos.find((l) => String(l.id) === String(selectedLogoId)) || null;
-
-  const logoVariant =
-    selectedLogo?.variants?.find((l) => String(l.id) === String(selectedLogoVariantId)) || null;
-
-  const viewPlacements =
-    logoVariant?.placements?.filter(
-      (p) => p.view.toLowerCase() === selectedView.toLowerCase()
-    ) || [];
 
   // 🟡 Update main product image based on view
   useEffect(() => {
@@ -205,16 +214,16 @@ Object.entries(quantities).forEach(([size, qty]) => {
         ? `https://neil-backend-1.onrender.com${customization.preview}`
         : mainImageUrl;
 
-     const cartItem = {
-  id: customization.id,
-  product_id: product.id,
-  title: product.title,
-  image: imageUrl,
-  quantity: totalQuantity,
-  unit_price: basePrice,
-  sizes: quantities,
-  total_price: totalPrice,
-};
+      const cartItem = {
+        id: customization.id,
+        product_id: product.id,
+        title: product.title,
+        image: imageUrl,
+        quantity: totalQuantity,
+        unit_price: basePrice, // Use the correct calculated basePrice
+        sizes: quantities,
+        total_price: totalPrice, // Use the correct calculated totalPrice
+      };
 
       addToCart(cartItem);
       setMessage(`✅ Customization saved and added to cart.`);
@@ -335,8 +344,8 @@ Object.entries(quantities).forEach(([size, qty]) => {
                 {product.sub_cat && ` > ${product.sub_cat}`}
               </p>
               <h5 className="text-primary mb-2">
-  ${productVariant?.price ?? product.price}
-</h5>
+                ${basePrice.toFixed(2)}
+              </h5>
               <p className="text-secondary small">
                 {product.description || "No description available."}
               </p>
@@ -351,9 +360,9 @@ Object.entries(quantities).forEach(([size, qty]) => {
                   >
                     {product.variants.map((p) => (
                       <option key={p.id} value={p.id}>
-  {p.color} {p.size && `- ${p.size}`} {p.sku && `(${p.sku})`}
-  {p.price ? ` — $${p.price}` : ""}
-</option>
+                        {p.color} {p.size && `- ${p.size}`} {p.sku && `(${p.sku})`}
+                        {p.price ? ` — $${p.price}` : ""}
+                      </option>
                     ))}
                   </Form.Select>
                 </Form.Group>
@@ -471,14 +480,9 @@ Object.entries(quantities).forEach(([size, qty]) => {
                 </Form>
               </div>
               <div className="mt-3">
-  <strong>Total Price: </strong>
-  ${Object.entries(quantities)
-    .reduce((sum, [size, qty]) => {
-      const sizeAdj = SIZE_PRICE_MAP[size.toLowerCase()] || 0;
-      return sum + (Number(productVariant?.price ?? product.price) + sizeAdj) * qty;
-    }, 0)
-    .toFixed(2)}
-</div>
+                <strong>Total Price: </strong>
+                ${totalPrice.toFixed(2)}
+              </div>
 
               {/* Add to Cart */}
               <div className="d-flex gap-2 mt-4">
