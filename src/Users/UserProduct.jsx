@@ -145,13 +145,22 @@ function UserProduct() {
 
   // 🟡 Update main product image based on view
   useEffect(() => {
-    if (!productVariant) return;
-    const img =
-      productVariant.images?.find(
-        (i) => i.type?.toLowerCase() === selectedView.toLowerCase()
-      ) || productVariant.images?.[0];
-    setMainImageUrl(img?.url || product?.images?.[0]?.url || "");
-  }, [selectedView, productVariant, product]);
+  if (!product) return;
+
+  let imgUrl = "";
+
+  if (productVariant?.images?.length) {
+    const match = productVariant.images.find(
+      (i) => i?.type?.toLowerCase() === selectedView.toLowerCase()
+    );
+    imgUrl = match?.url || productVariant.images[0]?.url;
+  } else if (product.images?.length) {
+    imgUrl = product.images[0].url;
+  }
+
+  setMainImageUrl(imgUrl || "");
+}, [selectedView, productVariant, product]);
+
 
   // Toggle placement selection
   const togglePlacement = (pid) => {
@@ -285,7 +294,6 @@ function UserProduct() {
                     src={mainImageUrl}
                     alt={product.title}
                     className="w-100 h-100 object-fit-contain"
-                    crossOrigin="anonymous"
                   />
                 ) : (
                   <div className="text-center text-muted p-5">No image</div>
