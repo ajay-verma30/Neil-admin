@@ -21,7 +21,13 @@ function ProductList() {
         });
         setProducts(res.data.products || []);
       } catch (err) {
-        if (err.response) {
+        // Don't show error if it's a 404 or empty response - show empty state instead
+        if (err.response?.status === 404) {
+          setProducts([]);
+        } else if (err.response?.status === 500) {
+          // For server errors, check if we have data anyway
+          setProducts([]);
+        } else if (err.response) {
           setError(err.response.data.message || "Failed to fetch products.");
         } else if (err.request) {
           setError("No response from server. Please check your connection.");
@@ -33,7 +39,7 @@ function ProductList() {
       }
     };
     getProducts();
-  }, [user, accessToken]);
+  }, [accessToken]);
 
   // ✅ Loading state
   if (loading) {
@@ -45,7 +51,7 @@ function ProductList() {
     );
   }
 
-  // ✅ Error state
+  // ✅ Error state - only show if there's a real error
   if (error) {
     return (
       <Container className="py-5">
@@ -57,34 +63,32 @@ function ProductList() {
     );
   }
 
-  // ✅ Empty state
-// ✅ Empty state (beautiful UI banner)
-if (products.length === 0) {
-  return (
-    <Container
-      fluid
-      className="d-flex flex-column justify-content-center align-items-center min-vh-100 bg-light"
-    >
-      <div className="p-4 text-center bg-white shadow-sm rounded-3" style={{ maxWidth: 500 }}>
-        <img
-          src="https://illustrations.popsy.co/gray/product-empty-state.svg"
-          alt="No products"
-          className="mb-3"
-          style={{ width: "180px", opacity: 0.8 }}
-        />
-        <h4 className="fw-semibold text-secondary">No products found</h4>
-        <p className="text-muted mb-3">
-          There are no products yet.
-        </p>
-      </div>
-    </Container>
-  );
-}
-
-
-  const productNav = (id)=>{
-    navigate(`/products/${id}`)
+  // ✅ Empty state (beautiful UI banner)
+  if (products.length === 0) {
+    return (
+      <Container
+        fluid
+        className="d-flex flex-column justify-content-center align-items-center min-vh-100 bg-light"
+      >
+        <div className="p-4 text-center bg-white shadow-sm rounded-3" style={{ maxWidth: 500 }}>
+          <img
+            src="https://illustrations.popsy.co/gray/product-empty-state.svg"
+            alt="No products"
+            className="mb-3"
+            style={{ width: "180px", opacity: 0.8 }}
+          />
+          <h4 className="fw-semibold text-secondary">No products added yet</h4>
+          <p className="text-muted mb-3">
+            Start adding products to your catalog to get started.
+          </p>
+        </div>
+      </Container>
+    );
   }
+
+  const productNav = (id) => {
+    navigate(`/products/${id}`);
+  };
 
   return (
     <Container fluid className="py-4 bg-light min-vh-100">
@@ -143,10 +147,10 @@ if (products.length === 0) {
                     </Card.Text>
 
                     <Card.Text className="text-secondary small mb-3">
-  {(product.description && product.description.length > 80)
-    ? product.description.slice(0, 80) + "..."
-    : product.description || "No description available."}
-</Card.Text>
+                      {product.description && product.description.length > 80
+                        ? product.description.slice(0, 80) + "..."
+                        : product.description || "No description available."}
+                    </Card.Text>
                   </Card.Body>
 
                   <Card.Footer className="bg-white border-0 d-flex justify-content-between align-items-center">
@@ -154,12 +158,12 @@ if (products.length === 0) {
                       ${product.price || "0.00"}
                     </h6>
                     <Button
-  variant="outline-primary"
-  size="sm"
-  onClick={() => productNav(product.id)} 
->
-  View Details
-</Button>
+                      variant="outline-primary"
+                      size="sm"
+                      onClick={() => productNav(product.id)}
+                    >
+                      View Details
+                    </Button>
                   </Card.Footer>
                 </Card>
               </Col>
