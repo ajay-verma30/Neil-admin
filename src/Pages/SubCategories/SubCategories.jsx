@@ -94,7 +94,7 @@ function SubCategories() {
 
     try {
       await axios.delete(
-        `https://neil-backend-1.onrender.com/subcategories/${id}`,
+        `https://neil-backend-1.onrender.com/sub-categories/${id}`,
         { headers: { Authorization: `Bearer ${accessToken}` } }
       );
       setSubCategories((prev) => prev.filter((sc) => sc.id !== id));
