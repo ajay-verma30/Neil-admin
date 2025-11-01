@@ -173,14 +173,14 @@ function SpecificUser() {
 
   const handleToggleStatus = async () => {
   try {
-    const newStatus = user.isActive ? 0 : 1; // toggle between 1 and 0
+    const newStatus = user.isActive ? 0 : 1;
     const res = await axios.patch(
       `${API_BASE_URL}/user/${userId}/status`,
       { isActive: newStatus },
       { headers: { Authorization: `Bearer ${accessToken}` } }
     );
 
-    setUser(res.data.user);
+    setUser({ ...user, isActive: newStatus });
     setSuccessMessage(`User marked as ${newStatus ? "active" : "inactive"}.`);
     setTimeout(() => setSuccessMessage(null), 3000);
   } catch (err) {

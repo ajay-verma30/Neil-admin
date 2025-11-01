@@ -191,6 +191,15 @@ function CreateProducts() {
     }
   };
 
+  const handleSubCategories = () =>{
+    if(user.role === "Super Admin"){
+      navigate('/admin/sub-categories')
+    }
+    else{
+      navigate(`/${org_id}/sub-categories`)
+    }
+  }
+
   return (
     <>
       <TopBar />
@@ -252,7 +261,7 @@ function CreateProducts() {
                         variant="outline-secondary"
                         size="sm"
                         className="mt-2"
-                        onClick={() => navigate(`/${org_id}/sub-categories`)}
+                        onClick={handleSubCategories}
                       >
                         + Add Sub-Category
                       </Button>
