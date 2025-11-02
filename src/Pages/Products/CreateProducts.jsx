@@ -186,6 +186,13 @@ function CreateProducts() {
 
       setSuccess(response.data.message || "Product added successfully!");
       resetForm();
+      if (response.status === 201) {
+        if (user.role === "Super Admin") {
+          navigate("/admin/logos");
+        } else {
+          navigate(`/${user.org_id}/logos`);
+        }
+      }
     } catch (err) {
 
       setError(err.response?.data?.message || "Something went wrong while adding the product.");
