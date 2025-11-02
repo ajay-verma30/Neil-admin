@@ -42,7 +42,6 @@ function NewUser() {
                 payload,
                 { headers: { Authorization: `Bearer ${accessToken}` } }
             )
-            console.log(payload);
             
             setAlert({ type: 'success', message: res.data.message })
             setFormData({
