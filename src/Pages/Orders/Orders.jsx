@@ -134,7 +134,7 @@ function Orders() {
         <td>{index + 1}</td>
         <td>
           <img
-            src={`https://neil-backend-1.onrender.com${order.preview_image_url}`}
+            src={order.preview_image_url}
             alt="preview"
             style={{
               width: "60px",

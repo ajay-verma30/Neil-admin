@@ -87,7 +87,7 @@ function Orders() {
                   <td>
                     {order.preview_image_url ? (
                       <img
-                        src={`https://neil-backend-1.onrender.com${order.preview_image_url}`}
+                        src={order.preview_image_url}
                         alt="Preview"
                         style={{
                           width: "70px",
