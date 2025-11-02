@@ -188,9 +188,9 @@ function CreateProducts() {
       resetForm();
       if (response.status === 201) {
         if (user.role === "Super Admin") {
-          navigate("/admin/logos");
+          navigate("/admin/products");
         } else {
-          navigate(`/${user.org_id}/logos`);
+          navigate(`/${user.org_id}/products`);
         }
       }
     } catch (err) {
