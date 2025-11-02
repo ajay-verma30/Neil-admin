@@ -8,7 +8,11 @@ import axios from 'axios'
 
 function NewUser() {
     const { user, accessToken } = useContext(AuthContext)
-    const { org_id: orgIdFromParams } = useParams() // if coming from /:org_id/users/new
+    const { org_id: orgIdFromParams } = useParams() // Optional: if route is /:org_id/users/new
+
+    // 1. STATE INITIALIZATION:
+    // Super Admin starts with an empty org_id to fill manually.
+    // Admin/Manager defaults to their own org_id or the one from the URL.
     const [formData, setFormData] = useState({
         f_name: '',
         l_name: '',
@@ -16,8 +20,9 @@ function NewUser() {
         contact: '',
         password: '',
         role: 'User',
-        org_id: user.role === 'Super Admin' ? '' : (orgIdFromParams || user.org_id) // auto-fill
+        org_id: user.role === 'Super Admin' ? '' : (orgIdFromParams || user.org_id)
     })
+
     const [loading, setLoading] = useState(false)
     const [alert, setAlert] = useState(null)
 
@@ -32,15 +37,12 @@ function NewUser() {
         setLoading(true)
         try {
             const payload = { ...formData }
-            // Remove org_id for Admin/Manager in formData if it is empty (Super Admin handles it manually)
-            if (user.role !== 'Super Admin') {
-                payload.org_id = user.org_id
-            }
             const res = await axios.post(
                 'https://neil-backend-1.onrender.com/users/new',
                 payload,
                 { headers: { Authorization: `Bearer ${accessToken}` } }
             )
+            
             setAlert({ type: 'success', message: res.data.message })
             setFormData({
                 f_name: '',
@@ -51,6 +53,7 @@ function NewUser() {
                 role: 'User',
                 org_id: user.role === 'Super Admin' ? '' : (orgIdFromParams || user.org_id)
             })
+
         } catch (err) {
             setAlert({
                 type: 'danger',
@@ -152,27 +155,25 @@ function NewUser() {
                                 </Col>
                             </Row>
 
-                            {user.role === 'Super Admin' ? (
-                                <Form.Group className="mb-3">
-                                    <Form.Label>Organization ID</Form.Label>
-                                    <Form.Control
-                                        type="text"
-                                        name="org_id"
-                                        value={formData.org_id}
-                                        onChange={handleChange}
-                                        required
-                                    />
-                                </Form.Group>
-                            ) : (
-                                <Form.Group className="mb-3">
-                                    <Form.Label>Organization ID</Form.Label>
-                                    <Form.Control
-                                        type="text"
-                                        value={formData.org_id}
-                                        disabled
-                                    />
-                                </Form.Group>
-                            )}
+                            {/* ORGANIZATION ID LOGIC */}
+                            <Form.Group className="mb-3">
+                                <Form.Label>Organization ID</Form.Label>
+                                <Form.Control
+                                    type="text"
+                                    name="org_id" // Only needed for Super Admin
+                                    value={formData.org_id}
+                                    onChange={user.role === 'Super Admin' ? handleChange : undefined} // Only allow change for Super Admin
+                                    // Required for Super Admin only if you need to enforce it
+                                    required={user.role === 'Super Admin' && formData.role !== 'Super Admin'} 
+                                    disabled={user.role !== 'Super Admin'} // Disabled for Admin/Manager
+                                />
+                                {user.role !== 'Super Admin' && (
+                                    <Form.Text className="text-muted">
+                                        This field is pre-filled with your organization ID.
+                                    </Form.Text>
+                                )}
+                            </Form.Group>
+
 
                             <Button variant="primary" type="submit" disabled={loading}>
                                 {loading ? <Spinner animation="border" size="sm" className="me-2"/> : null}

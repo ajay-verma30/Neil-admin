@@ -19,15 +19,11 @@ function ProductList() {
         const res = await axios.get("https://neil-backend-1.onrender.com/products/all-products", {
           headers: { Authorization: `Bearer ${accessToken}` },
         });
-        console.log(res);
-        console.log(res);
         setProducts(res.data.products || []);
       } catch (err) {
-        // Don't show error if it's a 404 or empty response - show empty state instead
         if (err.response?.status === 404) {
           setProducts([]);
         } else if (err.response?.status === 500) {
-          // For server errors, check if we have data anyway
           setProducts([]);
         } else if (err.response) {
           setError(err.response.data.message || "Failed to fetch products.");
@@ -43,7 +39,6 @@ function ProductList() {
     getProducts();
   }, [accessToken]);
 
-  // ✅ Loading state
   if (loading) {
     return (
       <div className="d-flex justify-content-center align-items-center vh-100 bg-light">
@@ -53,7 +48,6 @@ function ProductList() {
     );
   }
 
-  // ✅ Error state - only show if there's a real error
   if (error) {
     return (
       <Container className="py-5">
@@ -65,7 +59,6 @@ function ProductList() {
     );
   }
 
-  // ✅ Empty state (beautiful UI banner)
   if (products.length === 0) {
     return (
       <Container
