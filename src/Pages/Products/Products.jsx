@@ -13,7 +13,7 @@ import {
 } from "react-bootstrap";
 import { AuthContext } from "../../context/AuthContext";
 import axios from "axios";
-import { FontAwesomeIcon } from "react-fontawesome";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { useNavigate } from "react-router-dom";
 import { faPencil, faPlus } from "@fortawesome/free-solid-svg-icons";
 import "./Product.css";
