@@ -1,6 +1,4 @@
 import React, { useEffect, useState, useContext } from "react";
-
-import TopBar from "../../Components/TopBar/TopBar";
 import {
   Col,
   Row,
@@ -11,10 +9,12 @@ import {
   Form,
   Container,
   Accordion,
+  Table,
 } from "react-bootstrap";
-import Sidebar from "../../Components/SideBar/SideBar";
 import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
+import TopBar from "../../Components/TopBar/TopBar";
+import Sidebar from "../../Components/SideBar/SideBar";
 import { AuthContext } from "../../context/AuthContext";
 
 function SpecProduct() {
@@ -24,17 +24,21 @@ function SpecProduct() {
 
   const [product, setProduct] = useState(null);
   const [groups, setGroups] = useState([]);
-  const [groupVisibility, setGroupVisibility] = useState([]); // holds visibility states
+  const [groupVisibility, setGroupVisibility] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [selectedImage, setSelectedImage] = useState(null);
 
-  // 🔹 Fetch product + visibility + groups
+  // Format price as currency
+  const formatPrice = (price) =>
+    new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
+    }).format(price);
+
   useEffect(() => {
-    const fetchProduct = async () => {
+    const fetchData = async () => {
       try {
         setLoading(true);
-        setError("");
 
         const [productRes, groupsRes] = await Promise.all([
           axios.get(`https://neil-backend-1.onrender.com/products/${id}`, {
@@ -47,53 +51,50 @@ function SpecProduct() {
 
         const productData = productRes.data.product;
         const allGroups = groupsRes.data.groups || [];
-        const visibility = productData.group_visibility || [];
+        const visibilities = productData.group_visibility || [];
 
-        // Merge group list + visibility state
-        const mergedVisibility = allGroups.map((g) => {
-          const match = visibility.find((v) => v.group_id === g.id);
+        const merged = allGroups.map((g) => {
+          const match = visibilities.find((v) => v.group_id === g.id);
           return { group_id: g.id, title: g.title, is_visible: !!match?.is_visible };
         });
 
         setProduct(productData);
         setGroups(allGroups);
-        setGroupVisibility(mergedVisibility);
+        setGroupVisibility(merged);
       } catch (err) {
-
+        console.error(err);
         setError("Failed to fetch product details.");
       } finally {
         setLoading(false);
       }
     };
 
-    if (accessToken && id) fetchProduct();
+    if (accessToken && id) fetchData();
   }, [accessToken, id]);
 
-  // 🔹 Toggle group visibility state
   const toggleGroupVisibility = (groupId) => {
     setGroupVisibility((prev) =>
-      prev.map((gv) =>
-        gv.group_id === groupId ? { ...gv, is_visible: !gv.is_visible } : gv
+      prev.map((g) =>
+        g.group_id === groupId ? { ...g, is_visible: !g.is_visible } : g
       )
     );
   };
 
-  // 🔹 Save updated visibility
   const updateVisibility = async () => {
     try {
       const payload = groupVisibility.map(({ group_id, is_visible }) => ({
         group_id,
         is_visible,
       }));
+
       await axios.put(
         `https://neil-backend-1.onrender.com/products/${id}`,
         { group_visibility: payload },
-        {
-          headers: { Authorization: `Bearer ${accessToken}` },
-        }
+        { headers: { Authorization: `Bearer ${accessToken}` } }
       );
+
       alert("Group visibility updated successfully!");
-    } catch (err) {
+    } catch {
       alert("Failed to update visibility");
     }
   };
@@ -148,6 +149,7 @@ function SpecProduct() {
           <Container fluid className="form-box">
             <Card className="shadow-sm border-0">
               <Card.Body>
+                {/* Header */}
                 <div className="d-flex justify-content-between align-items-center mb-3">
                   <h4 className="fw-semibold text-dark mb-0">Product Details</h4>
                   <div>
@@ -158,32 +160,36 @@ function SpecProduct() {
                     >
                       Back
                     </Button>
-                    <Button variant="danger" onClick={async (e) => {
-                      e.preventDefault();
-                      if (window.confirm("Delete this product?")) {
-                        await axios.delete(`https://neil-backend-1.onrender.com/products/${id}`, {
-                          headers: { Authorization: `Bearer ${accessToken}` },
-                        });
-                        navigate(-1);
-                      }
-                    }}>
+                    <Button
+                      variant="danger"
+                      onClick={async () => {
+                        if (window.confirm("Delete this product?")) {
+                          await axios.delete(
+                            `https://neil-backend-1.onrender.com/products/${id}`,
+                            {
+                              headers: { Authorization: `Bearer ${accessToken}` },
+                            }
+                          );
+                          navigate(-1);
+                        }
+                      }}
+                    >
                       Delete
                     </Button>
                   </div>
                 </div>
 
-                {/* 🔹 Group Visibility Section */}
-                <div className="group-visibility mt-4 mb-4">
+                {/* Group Visibility */}
+                <div className="mb-4">
                   <h5>Group Visibility</h5>
                   <div className="d-flex flex-wrap gap-3 mt-2">
-                    {groupVisibility.map((gv) => (
+                    {groupVisibility.map((g) => (
                       <Form.Check
-                        key={gv.group_id}
+                        key={g.group_id}
                         type="checkbox"
-                        label={gv.title}
-                        checked={gv.is_visible}
-                        onChange={() => toggleGroupVisibility(gv.group_id)}
-                        className="d-flex align-items-center"
+                        label={g.title}
+                        checked={g.is_visible}
+                        onChange={() => toggleGroupVisibility(g.group_id)}
                       />
                     ))}
                   </div>
@@ -200,141 +206,135 @@ function SpecProduct() {
                 {/* Product Info */}
                 <Form>
                   <Row>
-                    <Col xs={12} md={6}>
+                    <Col md={6}>
                       <Form.Group className="mb-3">
-                        <Form.Label>Product Title</Form.Label>
-                        <Form.Control
-                          type="text"
-                          value={product.title || ""}
-                          readOnly
-                        />
+                        <Form.Label>Title</Form.Label>
+                        <Form.Control value={product.title} readOnly />
                       </Form.Group>
                     </Col>
-                    <Col xs={12} md={3}>
+                    <Col md={3}>
                       <Form.Group className="mb-3">
                         <Form.Label>Category</Form.Label>
-                        <Form.Control
-                          type="text"
-                          value={product.category || "-"}
-                          readOnly
-                        />
+                        <Form.Control value={product.category} readOnly />
                       </Form.Group>
                     </Col>
-                    <Col xs={12} md={3}>
+                    <Col md={3}>
                       <Form.Group className="mb-3">
                         <Form.Label>Sub Category</Form.Label>
-                        <Form.Control
-                          type="text"
-                          value={product.sub_cat || "-"}
-                          readOnly
-                        />
+                        <Form.Control value={product.sub_cat} readOnly />
                       </Form.Group>
                     </Col>
                   </Row>
 
                   <Form.Group className="mb-3">
                     <Form.Label>Description</Form.Label>
-                    <Form.Control
-                      as="textarea"
-                      rows={3}
-                      value={product.description || "-"}
-                      readOnly
-                    />
+                    <Form.Control as="textarea" rows={3} value={product.description} readOnly />
                   </Form.Group>
 
                   <Row>
-                    <Col xs={4}>
+                    <Col md={4}>
                       <Form.Group className="mb-3">
                         <Form.Label>SKU</Form.Label>
-                        <Form.Control
-                          type="text"
-                          value={product.sku || "-"}
-                          readOnly
-                        />
+                        <Form.Control value={product.sku} readOnly />
                       </Form.Group>
                     </Col>
-                    <Col xs={4}>
+                    <Col md={4}>
                       <Form.Group className="mb-3">
                         <Form.Label>Status</Form.Label>
                         <Form.Control
-                          type="text"
-                          value={
-                            Number(product.isActive) === 1
-                              ? "Active"
-                              : "Inactive"
-                          }
+                          value={product.isActive ? "Active" : "Inactive"}
                           readOnly
                         />
                       </Form.Group>
                     </Col>
-                    <Col xs={4}>
+                    <Col md={4}>
                       <Form.Group className="mb-3">
-                        <Form.Label>Created At</Form.Label>
-                        <Form.Control
-                          type="text"
-                          value={
-                            new Date(product.created_at).toLocaleString() || "-"
-                          }
-                          readOnly
-                        />
+                        <Form.Label>Base Price</Form.Label>
+                        <Form.Control value={formatPrice(product.price)} readOnly />
                       </Form.Group>
                     </Col>
                   </Row>
 
-                  {/* Variants Accordion */}
+                  {/* Product Images */}
+                  <div className="mt-4">
+                    <h5>Product Images</h5>
+                    {product.images?.length > 0 ? (
+                      <div className="d-flex flex-wrap gap-3 mt-2">
+                        {product.images.map((img) => (
+                          <img
+                            key={img.id}
+                            src={img.url}
+                            alt="Product"
+                            height="120"
+                            className="rounded border"
+                          />
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-muted">No images available</p>
+                    )}
+                  </div>
+
+                  {/* Variants */}
                   {product.variants?.length > 0 && (
-                    <div className="mt-4">
+                    <div className="mt-5">
                       <h5>Variants</h5>
                       <Accordion defaultActiveKey="0">
                         {product.variants.map((v, idx) => (
                           <Accordion.Item eventKey={String(idx)} key={v.id}>
                             <Accordion.Header>
-                              {v.color || "Variant"} — {v.size || "-"} ({v.sku})
+                              {v.color || "Variant"} — {v.sku}
                             </Accordion.Header>
                             <Accordion.Body>
-                              <Row>
-                                <Col md={4}>
-                                  <p><strong>Color:</strong> {v.color || "-"}</p>
-                                  <p><strong>Size:</strong> {v.size || "-"}</p>
-                                  <p><strong>SKU:</strong> {v.sku || "-"}</p>
-                                </Col>
-                                <Col md={8}>
-                                  {v.images?.length > 0 ? (
-                                    <div className="d-flex flex-wrap gap-2">
-                                      {v.images.map((img) => (
-                                        <div key={img.id}>
-                                          <img
-                                            src={img.url}
-                                            alt={img.type}
-                                            height="120"
-                                            style={{
-                                              borderRadius: "6px",
-                                              border: "1px solid #ccc",
-                                              cursor: "pointer",
-                                            }}
-                                            onClick={() =>
-                                              setSelectedImage(img.url)
-                                            }
-                                          />
-                                          <div
-                                            style={{
-                                              fontSize: "0.8rem",
-                                              textAlign: "center",
-                                              marginTop: "4px",
-                                            }}
-                                          >
-                                            {img.type}
-                                          </div>
-                                        </div>
-                                      ))}
+                              <p><strong>Color:</strong> {v.color}</p>
+                              <p><strong>Variant SKU:</strong> {v.sku}</p>
+
+                              {/* Attributes Table */}
+                              <h6 className="mt-3">Size & Pricing</h6>
+                              {v.attributes?.length > 0 ? (
+                                <Table striped bordered size="sm">
+                                  <thead>
+                                    <tr>
+                                      <th>Size</th>
+                                      <th>Price Adjustment</th>
+                                      <th>Final Price</th>
+                                      <th>Stock</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    {v.attributes.map((a, i) => (
+                                      <tr key={i}>
+                                        <td>{a.name}</td>
+                                        <td>{formatPrice(a.adjustment)}</td>
+                                        <td>{formatPrice(a.final_price)}</td>
+                                        <td>{a.stock}</td>
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </Table>
+                              ) : (
+                                <Alert variant="info">No size attributes defined</Alert>
+                              )}
+
+                              {/* Variant Images */}
+                              <h6 className="mt-4">Variant Images</h6>
+                              {v.images?.length > 0 ? (
+                                <div className="d-flex flex-wrap gap-3">
+                                  {v.images.map((img) => (
+                                    <div key={img.id} style={{ textAlign: "center" }}>
+                                      <img
+                                        src={img.url}
+                                        alt={img.type}
+                                        height="120"
+                                        className="rounded border"
+                                      />
+                                      <div style={{ fontSize: "0.8rem" }}>{img.type}</div>
                                     </div>
-                                  ) : (
-                                    <p className="text-muted">
-                                      No images for this variant
-                                    </p>
-                                  )}
-                                </Col>
-                              </Row>
+                                  ))}
+                                </div>
+                              ) : (
+                                <p className="text-muted">No images for this variant</p>
+                              )}
                             </Accordion.Body>
                           </Accordion.Item>
                         ))}

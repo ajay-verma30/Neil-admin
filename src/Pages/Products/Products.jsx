@@ -2,14 +2,16 @@ import React, { useEffect, useState, useContext } from "react";
 import TopBar from "../../Components/TopBar/TopBar";
 import Sidebar from "../../Components/SideBar/SideBar";
 import {
-  Row,
-  Col,
-  Container,
-  Table,
-  Spinner,
-  Alert,
-  Card,
-  Button,
+  Row,
+  Col,
+  Container,
+  Table,
+  Spinner,
+  Alert,
+  Card,
+  Button,
+  Image,
+  Badge,
 } from "react-bootstrap";
 import { AuthContext } from "../../context/AuthContext";
 import axios from "axios";
@@ -19,170 +21,238 @@ import { faPencil, faPlus } from "@fortawesome/free-solid-svg-icons";
 import "./Product.css";
 
 function Products() {
-  const navigate = useNavigate();
-  const { user, accessToken } = useContext(AuthContext);
-  const [products, setProducts] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [err, setErr] = useState(null);
+  const navigate = useNavigate();
+  const { user, accessToken } = useContext(AuthContext);
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [err, setErr] = useState(null);
 
-  useEffect(() => {
-    if (!accessToken) return;
+  useEffect(() => {
+    if (!accessToken) return;
 
-    const fetchProducts = async () => {
-      try {
-        setLoading(true);
-        setErr(null);
+    const fetchProducts = async () => {
+      try {
+        setLoading(true);
+        setErr(null);
 
-        const res = await axios.get(
-          "https://neil-backend-1.onrender.com/products/all-products",
-          {
-            headers: { Authorization: `Bearer ${accessToken}` },
-          }
-        );
+        const res = await axios.get(
+          "https://neil-backend-1.onrender.com/products/all-products",
+          {
+            headers: { Authorization: `Bearer ${accessToken}` },
+          }
+        );
 
-        setProducts(res.data.products || []);
-      } catch (error) {
-        setErr(
-          error.response?.data?.message ||
-            "Failed to fetch products. Please try again later."
-        );
-      } finally {
-        setLoading(false);
-      }
-    };
+        setProducts(res.data.products || []);
+      } catch (error) {
+        setErr(
+          error.response?.data?.message ||
+            "Failed to fetch products. Please try again later."
+        );
+      } finally {
+        setLoading(false);
+      }
+    };
 
-    fetchProducts();
-  }, [accessToken]);
+    fetchProducts();
+  }, [accessToken]);
 
-  const createProduct = () => {
-    if (user.role === "Super Admin") {
-      navigate("/admin/products/new");
-    } else {
-      navigate(`/${user.org_id}/products/new`);
-    }
-  };
+  const createProduct = () => {
+    if (user.role === "Super Admin") {
+      navigate("/admin/products/new");
+    } else {
+      navigate(`/${user.org_id}/products/new`);
+    }
+  };
 
-  const specProducts = (productId) => {
-    if (user.role === "Super Admin") {
-      navigate(`/admin/products/${productId}`);
-    } else {
-      navigate(`/${user.org_id}/products/${productId}`);
-    }
-  };
+  const specProducts = (productId) => {
+    if (user.role === "Super Admin") {
+      navigate(`/admin/products/${productId}`);
+    } else {
+      navigate(`/${user.org_id}/products/${productId}`);
+    }
+  };
 
-  // 🧩 Helper UI: Loader + Error overlay
-  const OverlayCard = ({ children }) => (
-    <div className="d-flex justify-content-center align-items-center" style={{ minHeight: "60vh" }}>
-      <Card className="shadow-sm text-center p-5" style={{ minWidth: "400px" }}>
-        {children}
-      </Card>
-    </div>
-  );
+  const OverlayCard = ({ children }) => (
+    <div
+      className="d-flex justify-content-center align-items-center"
+      style={{ minHeight: "60vh" }}
+    >
+      <Card className="shadow-sm text-center p-5" style={{ minWidth: "400px" }}>
+        {children}
+      </Card>
+    </div>
+  );
 
-  return (
-    <>
-      <TopBar />
-      <Row>
-        <Col xs={2} md={2}>
-          <Sidebar />
-        </Col>
-        <Col xs={10} md={10}>
-          <div className="form-box py-3">
-            <Container fluid>
-              <div className="d-flex justify-content-between align-items-center mb-4">
-                <h2 className="fw-light text-secondary">Product Management</h2>
-                <Button
-                  variant="primary"
-                  className="d-flex align-items-center shadow-sm"
-                  title="Add New Product"
-                  onClick={createProduct}
-                >
-                  <FontAwesomeIcon icon={faPlus} className="me-2" />
-                  Add Product
-                </Button>
-              </div>
+  return (
+    <>
+      <TopBar />
 
-              {loading ? (
-                <OverlayCard>
-                  <div>
-                    <Spinner animation="border" variant="primary" />
-                    <div className="mt-3 text-muted">Loading products...</div>
-                  </div>
-                </OverlayCard>
-              ) : err ? (
-                <OverlayCard>
-                  <Alert variant="danger" className="mb-3">
-                    {err}
-                  </Alert>
-                  <Button variant="outline-danger" onClick={() => window.location.reload()}>
-                    Retry
-                  </Button>
-                </OverlayCard>
-              ) : products.length === 0 ? (
-                <OverlayCard>
-                  <div className="text-muted">No products found.</div>
-                </OverlayCard>
-              ) : (
-                <Table striped bordered hover responsive className="shadow-sm">
-                  <thead>
-                    <tr>
-                      <th>#</th>
-                      <th>Title</th>
-                      <th>SKU</th>
-                      <th>Variants</th>
-                      <th>Created At</th>
-                      <th>Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {products.map((p, index) => (
-                      <tr key={p.id}>
-                        <td>{index + 1}</td>
-                        <td>{p.title}</td>
-                        <td>{p.sku}</td>
-                        <td>
-                            {/* --- START REVISED VARIANT DISPLAY LOGIC --- */}
-                          {p.variants.map((v) => (
-                                // Check if the variant has color and attributes (sizes)
-                                v.attributes && v.attributes.length > 0 ? (
-                                    v.attributes.map((attr, attrIndex) => (
-                                        <div 
-                                            key={`${v.id}-${attr.name}`} 
-                                            className="text-nowrap" 
-                                            style={{ borderBottom: attrIndex === v.attributes.length - 1 ? 'none' : '1px dotted #ccc', padding: '2px 0' }}
-                                        >
-                                            {/* Format: Color / Size (Variant SKU) - Price */}
-                                            **{v.color || 'No Color'}** / {attr.name} ({v.sku})
-                                        </div>
-                                    ))
-                                ) : (
-                                    // Fallback for variants with no size attributes (e.g., base product variant)
-                                    <div key={v.id}>
-                                        {v.color ? `${v.color} (${v.sku})` : v.sku}
+      <Container fluid className="p-0">
+        <Row className="g-0">
+          {/* Sidebar */}
+          <Col xs={12} md={2} className="bg-light min-vh-100 border-end">
+            <Sidebar />
+          </Col>
+
+          {/* Main Content */}
+          <Col xs={12} md={10} className="p-4">
+            <div className="mb-4 d-flex justify-content-between align-items-center border-bottom pb-2 form-box">
+              <h2 className="fw-light text-secondary mb-0">
+                Product Management
+              </h2>
+              <Button
+                variant="primary"
+                className="d-flex align-items-center shadow-sm"
+                title="Add New Product"
+                onClick={createProduct}
+              >
+                <FontAwesomeIcon icon={faPlus} className="me-2" />
+                Add Product
+              </Button>
+            </div>
+
+            {/* Loader / Error / Empty */}
+            {loading ? (
+              <OverlayCard>
+                <Spinner animation="border" variant="primary" />
+                <div className="mt-3 text-muted">Loading products...</div>
+              </OverlayCard>
+            ) : err ? (
+              <OverlayCard>
+                <Alert variant="danger" className="mb-3">
+                  {err}
+                </Alert>
+                <Button
+                  variant="outline-danger"
+                  onClick={() => window.location.reload()}
+                >
+                  Retry
+                </Button>
+              </OverlayCard>
+            ) : products.length === 0 ? (
+              <OverlayCard>
+                <div className="text-muted">No products found.</div>
+              </OverlayCard>
+            ) : (
+              <Table
+                striped
+                bordered
+                hover
+                responsive
+                className="shadow-sm align-middle"
+              >
+                <thead className="table-light">
+                  <tr>
+                    <th>#</th>
+                    <th>Title</th>
+                    <th>Category</th>
+                    <th>Price</th>
+                    <th>Variants</th>
+                    <th>Created</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {products.map((p, index) => (
+                    <tr key={p.id}>
+                      <td>{index + 1}</td>
+                      <td>
+                        <div className="fw-semibold">{p.title}</div>
+                        <div className="text-muted small">{p.sku}</div>
+                        {p.sub_cat && (
+                          <Badge bg="secondary" className="mt-1">
+                            {p.sub_cat}
+                          </Badge>
+                        )}
+                      </td>
+                      <td>
+                        <span>{p.category}</span>
+                      </td>
+                      <td>
+                        <strong>${parseFloat(p.price).toFixed(2)}</strong>
+                      </td>
+
+                      {/* Variants column */}
+                      <td>
+                        {p.variants.length > 0 ? (
+                          p.variants.map((v) => (
+                            <div
+                              key={v.id}
+                              className="mb-2 border-bottom pb-1 small"
+                            >
+                              {/* Color + SKU */}
+                              <div className="fw-semibold text-primary">
+                                {v.color || "No Color"} ({v.sku})
+                              </div>
+
+                              {/* Thumbnail */}
+                              {v.images?.[0] && (
+                                <Image
+                                  src={v.images[0].url}
+                                  alt="variant"
+                                  rounded
+                                  style={{
+                                    width: "40px",
+                                    height: "40px",
+                                    objectFit: "cover",
+                                    marginRight: "5px",
+                                  }}
+                                />
+                              )}
+
+                              {/* Sizes */}
+                              {v.attributes.length > 0 ? (
+                                <div className="mt-1 text-muted">
+                                  {v.attributes.map((attr) => (
+                                    <div key={attr.name}>
+                                      • {attr.name} (
+                                      <span className="text-success">
+                                        +${parseFloat(attr.adjustment).toFixed(
+                                          2
+                                        )}
+                                      </span>
+                                      ) | Stock: {attr.stock}
                                     </div>
-                                )
-                          ))}
-                            {/* --- END REVISED VARIANT DISPLAY LOGIC --- */}
-                        </td>
-                        <td>{new Date(p.created_at).toLocaleString()}</td>
-                        <td>
-                          <FontAwesomeIcon
-                            icon={faPencil}
-                            style={{ cursor: "pointer" }}
-                            onClick={() => specProducts(p.id)}
-                          />
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </Table>
-              )}
-            </Container>
-          </div>
-        </Col>
-      </Row>
-    </>
-  );
+                                  ))}
+                                </div>
+                              ) : (
+                                <div className="text-muted">No sizes</div>
+                              )}
+                            </div>
+                          ))
+                        ) : (
+                          <div className="text-muted">No variants</div>
+                        )}
+                      </td>
+
+                      {/* Created At */}
+                      <td>
+                        {new Date(p.created_at).toLocaleDateString()}{" "}
+                        <div className="text-muted small">
+                          {new Date(p.created_at).toLocaleTimeString()}
+                        </div>
+                      </td>
+
+                      <td>
+                        <FontAwesomeIcon
+                          icon={faPencil}
+                          style={{
+                            cursor: "pointer",
+                            color: "#0d6efd",
+                          }}
+                          onClick={() => specProducts(p.id)}
+                        />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </Table>
+            )}
+          </Col>
+        </Row>
+      </Container>
+    </>
+  );
 }
 
 export default Products;
