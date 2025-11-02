@@ -6,6 +6,7 @@ import axios from "axios";
 import { AuthContext } from "../../context/AuthContext";
 import { useNavigate, useParams } from "react-router-dom";
 
+
 const IMAGE_TYPES = ["front", "back", "left", "right"];
 
 function CreateProducts() {

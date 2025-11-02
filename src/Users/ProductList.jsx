@@ -19,6 +19,7 @@ function ProductList() {
         const res = await axios.get("https://neil-backend-1.onrender.com/products/all-products", {
           headers: { Authorization: `Bearer ${accessToken}` },
         });
+        console.log(res);
         setProducts(res.data.products || []);
       } catch (err) {
         // Don't show error if it's a 404 or empty response - show empty state instead
