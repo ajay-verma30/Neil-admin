@@ -18,13 +18,13 @@ function Cart() {
   const { cart, removeFromCart, addToCart,user,accessToken } = useContext(AuthContext);
   const navigate = useNavigate();
   const totalAmount = useMemo(() => {
-    return cart
-      ?.reduce(
-        (sum, item) => sum + parseFloat(item.price || 0) * (item.quantity || 0),
-        0
-      )
-      .toFixed(2);
-  }, [cart]);
+  return cart
+    ?.reduce(
+      (sum, item) => sum + parseFloat(item.unit_price || 0) * (item.quantity || 0),
+      0
+    )
+    .toFixed(2);
+}, [cart]);
 
 
   const handleQuantityChange = (item, newQuantity) => {
@@ -125,10 +125,10 @@ const handleCheckout = async () => {
         onChange={(e) => handleQuantityChange(item, e.target.value)}
       />
     </td>
-    <td className="text-center">${item.price}</td>
-    <td className="text-center">
-      ${(parseFloat(item.price) * item.quantity).toFixed(2)}
-    </td>
+    <td className="text-center">${item.unit_price}</td>
+<td className="text-center">
+  ${(parseFloat(item.unit_price) * item.quantity).toFixed(2)}
+</td>
     <td className="text-center">
       <Button
         variant="outline-danger"

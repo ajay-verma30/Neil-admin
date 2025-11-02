@@ -106,7 +106,6 @@ function UserProduct() {
         });
 
         const prod = prodRes.data.product;
-        console.log(prod);
         setProduct(prod);
 
         if (prod.variants?.length > 0) {
@@ -126,7 +125,6 @@ function UserProduct() {
           headers: { Authorization: `Bearer ${accessToken}` },
         });
         const valid = logosRes.data.filter((l) => l.variants?.length > 0);
-        console.log(valid);
         setLogos(valid);
 
         if (valid.length > 0) {
