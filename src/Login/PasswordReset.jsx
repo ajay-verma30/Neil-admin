@@ -15,16 +15,29 @@ function PasswordReset() {
   const [loading, setLoading] = useState(false);
   const [errMsg, setErrMsg] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
+const [passwordError, setPasswordError] = useState("");
+const [confPasswordError, setConfPasswordError] = useState("");
 
   const resetUserPassword = async (e) => {
     e.preventDefault();
     setErrMsg("");
     setSuccessMsg("");
+    setPasswordError("");
+  setConfPasswordError("");
+
+  const passwordRegex = /^(?=.*[a-z])(?=.*\d)(?=.*[!@#$%^&*]).{8,}$/;
 
     if (!password || !confPassword) {
       setErrMsg("Please fill in all fields.");
       return;
     }
+
+    if (!passwordRegex.test(password)) {
+    setPasswordError(
+      "Password must be at least 8 characters long, include one lowercase letter, one number, and one special character."
+    );
+    return;
+  }
 
     if (password !== confPassword) {
       setErrMsg("Passwords do not match.");
@@ -65,28 +78,40 @@ function PasswordReset() {
       {errMsg && <Alert variant="danger">{errMsg}</Alert>}
       {successMsg && <Alert variant="success">{successMsg}</Alert>}
 
-      <Form onSubmit={resetUserPassword}>
-        <Form.Group className="mb-3">
-          <Form.Label>New Password</Form.Label>
-          <Form.Control
-            type="password"
-            placeholder="Enter new password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            disabled={loading}
-          />
-        </Form.Group>
+     <Form onSubmit={resetUserPassword}>
+  <Form.Group className="mb-3">
+    <Form.Label>New Password</Form.Label>
+    <Form.Control
+      type="password"
+      placeholder="Enter new password"
+      value={password}
+      onChange={(e) => setPassword(e.target.value)}
+      disabled={loading}
+      isInvalid={passwordError !== ""}
+    />
+    {passwordError && (
+      <Form.Control.Feedback type="invalid">
+        {passwordError}
+      </Form.Control.Feedback>
+    )}
+  </Form.Group>
 
-        <Form.Group className="mb-3">
-          <Form.Label>Confirm Password</Form.Label>
-          <Form.Control
-            type="password"
-            placeholder="Re-enter new password"
-            value={confPassword}
-            onChange={(e) => setConfPassword(e.target.value)}
-            disabled={loading}
-          />
-        </Form.Group>
+  <Form.Group className="mb-3">
+    <Form.Label>Confirm Password</Form.Label>
+    <Form.Control
+      type="password"
+      placeholder="Re-enter new password"
+      value={confPassword}
+      onChange={(e) => setConfPassword(e.target.value)}
+      disabled={loading}
+      isInvalid={confPasswordError !== ""}
+    />
+    {confPasswordError && (
+      <Form.Control.Feedback type="invalid">
+        {confPasswordError}
+      </Form.Control.Feedback>
+    )}
+  </Form.Group>
 
         <hr />
 
