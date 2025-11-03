@@ -184,7 +184,7 @@ function NewUser() {
                     user.role === "Super Admin" &&
                     formData.role !== "Super Admin"
                   }
-                  disabled={user.role !== "Super Admin"} // Disabled for Admin/Manager
+                  disabled={user.role !== "Super Admin"} 
                 />
                 {user.role !== "Super Admin" && (
                   <Form.Text className="text-muted">
