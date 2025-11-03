@@ -215,7 +215,6 @@ const imageUrl = customization.preview
     return acc;
   }, {}),
 };
-console.log(cartItem);
 
 try {
   const res = await axios.post(
@@ -240,14 +239,12 @@ try {
   addToCart(cartItem);
   setMessage("✅ Added to cart successfully.");
 } catch (err) {
-  console.error("❌ Error saving to backend cart:", err);
   setMessage(err.response?.data?.message || "❌ Failed to add to cart.");
 }
 
 
 
       addToCart(cartItem);
-      console.log(cartItem);
       setMessage(`✅ Customization saved and added to cart.`);
     } catch (err) {
       setMessage(err.response?.data?.message || "❌ Failed to save customization or add to cart.");

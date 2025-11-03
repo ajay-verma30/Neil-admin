@@ -53,10 +53,8 @@ const [addressContext, setAddressContext] = useState("");
             headers: { Authorization: `Bearer ${accessToken}` },
           }
         );
-        console.log(res.data);
         setMyCartProducts(res.data);
       } catch (err) {
-        console.error("Error fetching cart:", err);
       } finally {
         setLoading(false);
       }
@@ -75,7 +73,6 @@ const [addressContext, setAddressContext] = useState("");
       });
       setMyCartProducts((prev) => prev.filter((item) => item.id !== id));
     } catch (err) {
-      console.error("Error deleting item:", err);
       alert("Failed to delete item.");
     } finally {
       setDeletingId(null);
@@ -102,7 +99,6 @@ const [addressContext, setAddressContext] = useState("");
       );
       setAddresses(res.data.addresses || []);
     } catch (err) {
-      console.error("Error fetching addresses:", err);
       setAddresses([]);
     } finally {
       setFetchingAddresses(false);
@@ -138,7 +134,6 @@ const [addressContext, setAddressContext] = useState("");
       });
       handleOrderClick(); // refresh list
     } catch (err) {
-      console.error("Error saving address:", err);
       alert(err.response?.data?.message || "Failed to save address.");
     } finally {
       setSavingAddress(false);
@@ -475,10 +470,10 @@ const [addressContext, setAddressContext] = useState("");
 
       const payload = {
         user_id: user.id,
-        org_id: user.org_id || 1, // replace with your actual org id logic
+        org_id: user.org_id || 1,
         shipping_address_id: selectedShipping,
         billing_address_id: selectedBilling,
-        payment_method: "COD", // or whatever default you want
+        payment_method: "COD", 
       };
 
       const res = await axios.post(
@@ -500,7 +495,6 @@ const [addressContext, setAddressContext] = useState("");
         alert("⚠️ Failed to create order. Please try again.");
       }
     } catch (err) {
-      console.error("Order creation failed:", err);
       alert(
         err.response?.data?.message ||
           "❌ Something went wrong while creating your order."
