@@ -17,3 +17,8 @@ body{
 .row {
   overflow: visible !important;
 }
+
+
+.card-body{
+  background-color: #f8fafc !important;
+}
