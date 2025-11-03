@@ -82,7 +82,7 @@ function SpecificOrganization() {
   if (!window.confirm("Are you sure you want to delete this organization? This action cannot be undone.")) return;
 
   try {
-    await axios.delete(`https://neil-backend-1.onrender.com/organization/${orgId}`, {
+    await axios.delete(`http://localhost:3000/organization/${orgId}`, {
       headers: { Authorization: `Bearer ${accessToken}` },
     });
     alert("Organization deleted successfully.");

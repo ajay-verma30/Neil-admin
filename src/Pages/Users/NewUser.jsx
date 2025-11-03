@@ -57,9 +57,9 @@ function NewUser() {
       });
       if (res.status === 201) {
         if (user.role === "Super Admin") {
-          navigate("/admin/logos");
+          navigate("/admin/users");
         } else {
-          navigate(`/${user.org_id}/logos`);
+          navigate(`/${user.org_id}/users`);
         }
       }
     } catch (err) {
