@@ -337,6 +337,16 @@ const addNewUser = () => {
               <strong>CSV Format:</strong> Your CSV file should contain columns:
               f_name, l_name, email, contact, org_id, groups
             </Alert>
+            <p className="mb-3">
+  <a
+    href="/files/sample_users_upload.xlsx"
+    download="sample_users_upload.xlsx"
+    className="text-primary text-decoration-underline"
+  >
+    📄 Sample Excel Sheet
+  </a>
+</p>
+
 
             <Form.Group className="mb-3">
               <Form.Label>Select excel File</Form.Label>
