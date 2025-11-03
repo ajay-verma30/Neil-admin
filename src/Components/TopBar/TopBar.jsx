@@ -1,5 +1,5 @@
 import React, { useContext } from "react";
-import { Navbar, Nav, Container, Dropdown, Badge } from "react-bootstrap";
+import { Navbar, Nav, Container, Dropdown, Badge,Button } from "react-bootstrap";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faUserCircle,
@@ -11,10 +11,13 @@ import {
 import { AuthContext } from "../../context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import "./TopBar.css";
+import { CartContext } from "../../context/CartContext";
+import { useLocation } from "react-router-dom";
 
 function TopBar() {
-  const { logout, user, cartCount } = useContext(AuthContext);
+  const { logout, user } = useContext(AuthContext);
   const navigate = useNavigate();
+  const {cart} =useContext(CartContext);
 
   const handleLogout = async (e) => {
     e.preventDefault();
@@ -26,6 +29,9 @@ function TopBar() {
       navigate("/", { replace: true });
     }
   };
+
+  const location = useLocation();
+  const isAdminPage = location.pathname.includes("admin");
 
   const handleNavigation = () => {
     const mode = localStorage.getItem("mode");
@@ -65,18 +71,16 @@ function TopBar() {
           <Nav className="d-flex align-items-center gap-3">
 
             {/* 🛒 Cart Icon */}
-            <div onClick={handleCartClick} className="position-relative" style={{ cursor: "pointer" }}>
-              <FontAwesomeIcon icon={faShoppingCart} size="lg" />
-              {cartCount > 0 && (
-                <Badge
-                  bg="danger"
-                  pill
-                  className="position-absolute top-0 start-100 translate-middle"
-                >
-                  {cartCount}
-                </Badge>
-              )}
-            </div>
+            {!window.location.pathname.includes("admin") && (
+  <div
+    onClick={handleCartClick}
+    className="position-relative"
+    style={{ cursor: "pointer" }}
+  >
+    <Button className="btn-primary">My Cart</Button>
+  </div>
+)}
+
 
             {/* 👤 User Dropdown */}
             <Dropdown align="end">
@@ -90,20 +94,21 @@ function TopBar() {
               </Dropdown.Toggle>
 
               <Dropdown.Menu className="topbar-dropdown-menu">
-                {/* ✅ Added Orders option */}
 
                 <Dropdown.Item onClick={handleProfileNav}>
                   <FontAwesomeIcon icon={faUser} className="me-2 text-primary" />
                   My Profile
                 </Dropdown.Item>
 
-                <Dropdown.Divider/>
-                <Dropdown.Item onClick={handleOrdersClick}>
-                  <FontAwesomeIcon icon={faBoxOpen} className="me-2 text-primary" />
-                  Orders
-                </Dropdown.Item>
 
-                <Dropdown.Divider />
+                <Dropdown.Menu>
+      {!isAdminPage && (
+        <Dropdown.Item onClick={handleOrdersClick}>
+          <FontAwesomeIcon icon={faBoxOpen} className="me-2 text-primary" />
+          Orders
+        </Dropdown.Item>
+      )}
+    </Dropdown.Menu>
 
                 <Dropdown.Item onClick={handleLogout} className="text-danger">
                   <FontAwesomeIcon icon={faPowerOff} className="me-2" />

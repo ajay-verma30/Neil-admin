@@ -15,7 +15,7 @@ function Orders() {
       setLoading(true);
       setError(null);
 
-      const res = await axios.get("https://neil-backend-1.onrender.com/checkout/all", {
+      const res = await axios.get("https://neil-backend-1.onrender.com/checkout/my-orders", {
         headers: { Authorization: `Bearer ${accessToken}` },
       });
       setOrders(res.data.orders || []);
@@ -72,7 +72,6 @@ function Orders() {
             <thead className="bg-light">
               <tr>
                 <th>#</th>
-                <th>Preview</th>
                 <th>Title</th>
                 <th>Total Amount</th>
                 <th>Status</th>
@@ -84,22 +83,6 @@ function Orders() {
               {orders.map((order, index) => (
                 <tr key={order.id}>
                   <td>{index + 1}</td>
-                  <td>
-                    {order.preview_image_url ? (
-                      <img
-                        src={order.preview_image_url}
-                        alt="Preview"
-                        style={{
-                          width: "70px",
-                          height: "70px",
-                          objectFit: "cover",
-                          borderRadius: "8px",
-                        }}
-                      />
-                    ) : (
-                      "—"
-                    )}
-                  </td>
                   <td>{order.product_title || "Custom Product"}</td>
                   <td><strong>{order.total_amount}</strong></td>
                   <td>
@@ -108,7 +91,7 @@ function Orders() {
                     </Badge>
                   </td>
                   <td>
-                    {order.order_date}
+                  {new Date(order.created_at).toLocaleDateString()}
                   </td>
                   {user?.role === "Super Admin" && (
                     <td>

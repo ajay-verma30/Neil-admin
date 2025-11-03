@@ -1,6 +1,6 @@
 import React, { useContext, useEffect, useState } from "react";
+import { Row, Col, Card, Spinner, Alert, Table, Badge } from "react-bootstrap";
 import TopBar from "../../Components/TopBar/TopBar";
-import { Row, Col, Spinner, Alert, Form, Button, Card } from "react-bootstrap";
 import Sidebar from "../../Components/SideBar/SideBar";
 import { AuthContext } from "../../context/AuthContext";
 import axios from "axios";
@@ -10,306 +10,213 @@ function SpecificOrder() {
   const { user, accessToken } = useContext(AuthContext);
   const { id } = useParams();
   const [order, setOrder] = useState(null);
-  const [note, setNote] = useState("");
   const [loading, setLoading] = useState(false);
-  const [saving, setSaving] = useState(false);
   const [errMsg, setErrMsg] = useState("");
-  const [successMsg, setSuccessMsg] = useState("");
 
-  // 🧾 Fetch order details
   useEffect(() => {
-    const getOrder = async () => {
-      setLoading(true);
-      setErrMsg("");
+    const fetchOrder = async () => {
       try {
+        setLoading(true);
         const res = await axios.get(`https://neil-backend-1.onrender.com/checkout/${id}`, {
           headers: { Authorization: `Bearer ${accessToken}` },
         });
-        setOrder(res.data.order || res.data);
+        setOrder(res.data.data || res.data);
       } catch (err) {
-        console.error("❌ Error fetching order:", err);
+        console.error("Error fetching order:", err);
         setErrMsg(
-          err.response?.data?.message ||
-            "Failed to load order details. Please try again later."
+          err.response?.data?.message || "Failed to fetch order details."
         );
       } finally {
         setLoading(false);
       }
     };
 
-    if (accessToken && id) getOrder();
+    if (accessToken) fetchOrder();
   }, [id, accessToken]);
-
-  // 📝 Unified Order Update (status + note)
-  const handleOrderUpdate = async (e) => {
-    e.preventDefault();
-    if (!order?.status) return;
-
-    setSaving(true);
-    setErrMsg("");
-    setSuccessMsg("");
-
-    try {
-      const res = await axios.patch(
-        `https://neil-backend-1.onrender.com/checkout/${id}`,
-        { status: order.status, note },
-        {
-          headers: { Authorization: `Bearer ${accessToken}` },
-        }
-      );
-
-      setSuccessMsg(res.data.message || "Order updated successfully!");
-      setNote("");
-    } catch (err) {
-      console.error("❌ Error updating order:", err);
-      setErrMsg(err.response?.data?.message || "Failed to update order.");
-    } finally {
-      setSaving(false);
-    }
-  };
 
   return (
     <>
       <TopBar />
       <Row>
         <Col xs={2}>
-          <Sidebar />
+        <Sidebar/>
         </Col>
+        <Col xs={10} md={10}>
+      <div className="d-flex">
+        
+        <div className="p-4 flex-grow-1 bg-light min-vh-100 form-box">
+          {loading ? (
+            <div className="text-center mt-5">
+              <Spinner animation="border" variant="primary" />
+            </div>
+          ) : errMsg ? (
+            <Alert variant="danger" className="mt-3">
+              {errMsg}
+            </Alert>
+          ) : order ? (
+            <>
+              {/* 🧾 Order Header */}
+              <Card className="shadow-sm mb-4 border-0">
+                <Card.Body>
+                  <div className="d-flex justify-content-between align-items-center">
+                    <h4 className="fw-bold text-primary mb-0">
+                      Order #{order.id}
+                    </h4>
+                    <Badge
+                      bg={
+                        order.status === "Pending"
+                          ? "warning"
+                          : order.status === "Completed"
+                          ? "success"
+                          : "secondary"
+                      }
+                    >
+                      {order.status}
+                    </Badge>
+                  </div>
+                  <p className="text-muted mb-0">
+                    <small>Batch ID: {order.order_batch_id}</small>
+                  </p>
+                </Card.Body>
+              </Card>
 
-        <Col xs={10}>
-          <div className="p-3">
-            <h4 className="mb-4">Order Details</h4>
-
-            {loading && (
-              <div className="text-center py-5">
-                <Spinner animation="border" /> Loading...
-              </div>
-            )}
-
-            {errMsg && <Alert variant="danger">{errMsg}</Alert>}
-            {successMsg && <Alert variant="success">{successMsg}</Alert>}
-
-            {!loading && order && (
-              <>
-                {/* 🧾 Order Info */}
-                <Form className="border rounded p-4 bg-light mb-4" onSubmit={handleOrderUpdate}>
-                  <Row className="mb-3">
+              {/* 🧍 Customer Info */}
+              <Card className="shadow-sm mb-4 border-0">
+                <Card.Header className="fw-semibold bg-white">
+                  Customer Details
+                </Card.Header>
+                <Card.Body>
+                  <Row>
                     <Col md={6}>
-                      <Form.Group>
-                        <Form.Label>Order ID</Form.Label>
-                        <Form.Control value={order.order_id || id} readOnly />
-                      </Form.Group>
-                    </Col>
-
-                    <Col md={6}>
-                      <Form.Group>
-                        <Form.Label><strong>Status</strong></Form.Label>
-                        {user.role === "Super Admin" ? (
-                          <Form.Select
-                            value={order.status}
-                            onChange={(e) =>
-                              setOrder({ ...order, status: e.target.value })
-                            }
-                          >
-                            <option value="Pending">Pending</option>
-                            <option value="Shipped">Shipped</option>
-                            <option value="Cancelled">Cancelled</option>
-                            <option value="Returned">Returned</option>
-                            <option value="Delivered">Delivered</option>
-                          </Form.Select>
-                        ) : (
-                          <Form.Control value={order.status} readOnly />
-                        )}
-                      </Form.Group>
-                    </Col>
-                  </Row>
-
-                  <Row className="mb-3">
-                    <Col md={6}>
-                      <Form.Group>
-                        <Form.Label>Total Amount</Form.Label>
-                        <Form.Control
-                          value={`$${order.total_amount}`}
-                          readOnly
-                        />
-                      </Form.Group>
+                      <p className="mb-1">
+                        <strong>Name:</strong>{" "}
+                        {order.customer?.f_name} {order.customer?.l_name}
+                      </p>
+                      <p className="mb-0">
+                        <strong>Email:</strong> {order.customer?.email}
+                      </p>
                     </Col>
                     <Col md={6}>
-                      <Form.Group>
-                        <Form.Label>Order Date</Form.Label>
-                        <Form.Control
-                          value={
-                            order.order_date
-                              ? new Date(order.order_date).toLocaleString("en-GB")
-                              : "N/A"
+                      <p className="mb-1">
+                        <strong>Payment Method:</strong>{" "}
+                        {order.payment_method}
+                      </p>
+                      <p className="mb-0">
+                        <strong>Payment Status:</strong>{" "}
+                        <Badge
+                          bg={
+                            order.payment_status === "Paid"
+                              ? "success"
+                              : "secondary"
                           }
-                          readOnly
-                        />
-                      </Form.Group>
+                        >
+                          {order.payment_status}
+                        </Badge>
+                      </p>
                     </Col>
                   </Row>
+                </Card.Body>
+              </Card>
 
-                  {/* 📝 Note Field */}
-                  {user.role === "Super Admin" && (
-                    <>
-                      <Form.Group>
-                        <Form.Label>Note (optional)</Form.Label>
-                        <Form.Control
-                          as="textarea"
-                          rows={4}
-                          placeholder="Add a note for the customer..."
-                          value={note}
-                          onChange={(e) => setNote(e.target.value)}
-                        />
-                      </Form.Group>
-                      <br />
-                      <Button type="submit" disabled={saving}>
-                        {saving ? "Updating..." : "Update Order"}
-                      </Button>
-                    </>
+              {/* 📦 Addresses */}
+              <Row>
+                <Col md={6}>
+                  <Card className="shadow-sm mb-4 border-0">
+                    <Card.Header className="fw-semibold bg-white">
+                      Shipping Address
+                    </Card.Header>
+                    <Card.Body>
+                      <p className="mb-0">{order.shipping_address}</p>
+                    </Card.Body>
+                  </Card>
+                </Col>
+                <Col md={6}>
+                  <Card className="shadow-sm mb-4 border-0">
+                    <Card.Header className="fw-semibold bg-white">
+                      Billing Address
+                    </Card.Header>
+                    <Card.Body>
+                      <p className="mb-0">{order.billing_address}</p>
+                    </Card.Body>
+                  </Card>
+                </Col>
+              </Row>
+
+              {/* 🧵 Customization Details */}
+              <Card className="shadow-sm border-0">
+                <Card.Header className="fw-semibold bg-white">
+                  Customization Details
+                </Card.Header>
+                <Card.Body>
+                  {order.customizationDetails?.length > 0 ? (
+                    <Table bordered responsive hover className="align-middle">
+                      <thead className="table-light">
+                        <tr>
+                          <th>Preview</th>
+                          <th>Title</th>
+                          <th>Placement</th>
+                          <th>Logo Color</th>
+                          <th>Product Color</th>
+                          <th>SKU</th>
+                          <th>Quantity</th>
+                          <th>Sizes</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {order.customizationDetails.map((item, idx) => (
+                          <tr key={idx}>
+                            <td>
+                              <img
+                                src={item.image}
+                                alt={item.title}
+                                width="80"
+                                className="rounded shadow-sm"
+                              />
+                            </td>
+                            <td>{item.title}</td>
+                            <td>
+                              {item.placement_name} ({item.placement_view})
+                            </td>
+                            <td>{item.logo_color}</td>
+                            <td>{item.product_color}</td>
+                            <td>{item.product_sku}</td>
+                            <td>{item.quantity}</td>
+                            <td>
+                              {Object.entries(item.sizes || {}).map(
+                                ([size, details]) => (
+                                  <div key={size}>
+                                    <strong>{size.toUpperCase()}</strong>:{" "}
+                                    {details.qty} × ${details.price} = $
+                                    {details.subtotal}
+                                  </div>
+                                )
+                              )}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </Table>
+                  ) : (
+                    <p className="text-muted mb-0">
+                      No customization details available.
+                    </p>
                   )}
-                </Form>
+                </Card.Body>
+              </Card>
 
-                {/* 👤 Customer Info */}
-                <Card className="p-4 mb-4 shadow-sm">
-                  <h5 className="mb-3">Customer Information</h5>
-                  <Row>
-                    <Col md={6}>
-                      <Form.Group>
-                        <Form.Label>Customer Name</Form.Label>
-                        <Form.Control
-                          value={order.customer_name || "N/A"}
-                          readOnly
-                        />
-                      </Form.Group>
-                    </Col>
-                    <Col md={6}>
-                      <Form.Group>
-                        <Form.Label>Email</Form.Label>
-                        <Form.Control value={order.email || "N/A"} readOnly />
-                      </Form.Group>
-                    </Col>
-                  </Row>
-                  <Row className="mt-3">
-                    <Col md={6}>
-                      <Form.Group>
-                        <Form.Label>Contact</Form.Label>
-                        <Form.Control value={order.contact || "N/A"} readOnly />
-                      </Form.Group>
-                    </Col>
-                    <Col md={6}>
-                      <Form.Group>
-                        <Form.Label>Organization</Form.Label>
-                        <Form.Control
-                          value={order.organization_name || "N/A"}
-                          readOnly
-                        />
-                      </Form.Group>
-                    </Col>
-                  </Row>
-                </Card>
-
-                {/* 🛍️ Product Info */}
-                <Card className="p-4 shadow-sm">
-                  <h5 className="mb-3">Product Information</h5>
-                  <Row>
-                    <Col md={6}>
-                      <Form.Group>
-                        <Form.Label>Product</Form.Label>
-                        <Form.Control
-                          value={order.product_title || "N/A"}
-                          readOnly
-                        />
-                      </Form.Group>
-                    </Col>
-                    <Col md={6}>
-                      <Form.Group>
-                        <Form.Label>Category</Form.Label>
-                        <Form.Control
-                          value={order.product_category || "N/A"}
-                          readOnly
-                        />
-                      </Form.Group>
-                    </Col>
-                  </Row>
-
-                  <Row className="mt-3">
-                    <Col md={4}>
-                      <Form.Group>
-                        <Form.Label>Variant</Form.Label>
-                        <Form.Control
-                          value={`${order.variant_color || ""} / ${order.variant_size || ""}`}
-                          readOnly
-                        />
-                      </Form.Group>
-                    </Col>
-                    <Col md={4}>
-                      <Form.Group>
-                        <Form.Label>Placement</Form.Label>
-                        <Form.Control
-                          value={
-                            order.placement_name
-                              ? `${order.placement_name} (${order.placement_view})`
-                              : "N/A"
-                          }
-                          readOnly
-                        />
-                      </Form.Group>
-                    </Col>
-                    <Col md={4}>
-                      <Form.Group>
-                        <Form.Label>Logo Title</Form.Label>
-                        <Form.Control
-                          value={order.logo_title || "N/A"}
-                          readOnly
-                        />
-                      </Form.Group>
-                    </Col>
-                  </Row>
-
-                  <Row className="mt-4 text-center">
-                    <Col md={6}>
-                      <p className="fw-bold mb-1">Logo</p>
-                      <img
-                        src={order.logo_url}
-                        alt={order.logo_title || "Logo"}
-                        className="border rounded"
-                        style={{
-                          width: "100px",
-                          height: "100px",
-                          objectFit: "contain",
-                          backgroundColor: "#f8f9fa",
-                        }}
-                      />
-                    </Col>
-                    <Col md={6}>
-                      <p className="fw-bold mb-1">Product Preview</p>
-                      <img
-                        src={
-                          order.preview_image_url?.startsWith("http")
-                            ? order.preview_image_url
-                            : `https://neil-backend-1.onrender.com${order.preview_image_url}`
-                        }
-                        alt="Preview"
-                        className="border rounded"
-                        style={{
-                          width: "140px",
-                          height: "140px",
-                          objectFit: "cover",
-                          backgroundColor: "#f8f9fa",
-                        }}
-                      />
-                    </Col>
-                  </Row>
-                </Card>
-              </>
-            )}
-
-            {!loading && !errMsg && !order && (
-              <Alert variant="info">No order details found.</Alert>
-            )}
-          </div>
-        </Col>
+              {/* 💰 Total */}
+              <Card className="shadow-sm border-0 mt-4">
+                <Card.Body className="text-end fw-bold">
+                  <h5>Total Amount: ${order.total_amount}</h5>
+                </Card.Body>
+              </Card>
+            </>
+          ) : (
+            <p>No order found.</p>
+          )}
+        </div>
+      </div>
+      </Col>
       </Row>
     </>
   );

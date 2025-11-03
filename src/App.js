@@ -2,6 +2,7 @@ import './App.css';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { useContext, useState, useEffect } from 'react';
 import { AuthProvider, AuthContext } from '../src/context/AuthContext';
+import { CartProvider } from './context/CartContext';
 import ProtectedRoute from './routes/ProtectedRoute';
 
 import Login from './Login/Login';
@@ -29,6 +30,7 @@ import ModePrompt from './context/ModePrompt';
 import FullOrders from './Pages/Orders/Orders'
 import SpecificOrder from './Pages/Orders/SpecificOrder';
 import MyProfile from './Users/MyProfile';
+import { AllProviders } from './context/AllProviders';
 
 function AppRoutes() {
   const { user } = useContext(AuthContext);
@@ -121,11 +123,11 @@ function AppContent() {
 function App() {
   return (
     <div className='App'>
-      <AuthProvider>
-        <Router>
+      <AllProviders>
+        <Router >
           <AppContent />
         </Router>
-      </AuthProvider>
+</AllProviders>
     </div>
   );
 }

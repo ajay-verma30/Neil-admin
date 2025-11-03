@@ -1,30 +1,30 @@
-import React, { useContext, useMemo, useEffect, useState } from "react";
-import { AuthContext } from "../context/AuthContext";
+import React, { useContext, useEffect, useState, useMemo } from "react";
 import TopBar from "../Components/TopBar/TopBar";
+import { AuthContext } from "../context/AuthContext";
+import { useNavigate } from "react-router-dom";
 import {
   Container,
-  Row,
-  Col,
-  Card,
-  Button,
   Table,
-  Alert,
-  Form,
+  Image,
+  Button,
   Spinner,
+  Modal,
+  Form,
 } from "react-bootstrap";
 import axios from "axios";
-import { useNavigate } from "react-router-dom";
 
 function Cart() {
-  const { cart, removeFromCart, addToCart, user, accessToken } =
-    useContext(AuthContext);
+  const { user, accessToken } = useContext(AuthContext);
   const navigate = useNavigate();
-
+  const [myCartProducts, setMyCartProducts] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [deletingId, setDeletingId] = useState(null);
+  const [showAddressModal, setShowAddressModal] = useState(false);
   const [addresses, setAddresses] = useState([]);
-  const [loadingAddresses, setLoadingAddresses] = useState(false);
-  const [addressError, setAddressError] = useState("");
+  const [fetchingAddresses, setFetchingAddresses] = useState(false);
+  const [showNewAddressForm, setShowNewAddressForm] = useState(false);
   const [newAddress, setNewAddress] = useState({
-    type: "shipping",
+    type: "",
     address_line_1: "",
     address_line_2: "",
     city: "",
@@ -33,62 +33,101 @@ function Cart() {
     country: "",
     is_default: false,
   });
-  const [selectedShipping, setSelectedShipping] = useState(null);
-  const [selectedBilling, setSelectedBilling] = useState(null);
+  const [savingAddress, setSavingAddress] = useState(false);
+  const [selectedShipping, setSelectedShipping] = useState("");
+const [selectedBilling, setSelectedBilling] = useState("");
+const [addressContext, setAddressContext] = useState("");
 
-  const totalAmount = useMemo(
-    () =>
-      cart
-        ?.reduce(
-          (sum, item) =>
-            sum + parseFloat(item.unit_price || 0) * (item.quantity || 0),
-          0
-        )
-        .toFixed(2),
-    [cart]
-  );
-
-  // 🏠 Fetch user's addresses
   useEffect(() => {
-    const fetchAddresses = async () => {
-      setLoadingAddresses(true);
-      setAddressError("");
+    if (!user) {
+      navigate("/");
+      return;
+    }
+
+    const getMyCart = async () => {
       try {
+        setLoading(true);
         const res = await axios.get(
-          "https://neil-backend-1.onrender.com/address/my-address",
+          `https://neil-backend-1.onrender.com/cart/${user.id}`,
           {
             headers: { Authorization: `Bearer ${accessToken}` },
           }
         );
-        setAddresses(res.data.addresses || []);
+        console.log(res.data);
+        setMyCartProducts(res.data);
       } catch (err) {
-        if (err.response?.status === 404) {
-          setAddresses([]); // no addresses yet
-        } else {
-          setAddressError(
-            err.response?.data?.message ||
-              "Failed to load addresses. Try again later."
-          );
-        }
+        console.error("Error fetching cart:", err);
       } finally {
-        setLoadingAddresses(false);
+        setLoading(false);
       }
     };
-    if (accessToken) fetchAddresses();
-  }, [accessToken]);
 
-  // ➕ Add new address
-  const handleAddAddress = async (e) => {
+    getMyCart();
+  }, [user, accessToken, navigate]);
+
+  const handleDelete = async (id) => {
+    if (!window.confirm("Are you sure you want to remove this item?")) return;
+
+    try {
+      setDeletingId(id);
+      await axios.delete(`https://neil-backend-1.onrender.com/cart/${id}`, {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+      setMyCartProducts((prev) => prev.filter((item) => item.id !== id));
+    } catch (err) {
+      console.error("Error deleting item:", err);
+      alert("Failed to delete item.");
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
+  const subtotal = useMemo(() => {
+    return myCartProducts.reduce(
+      (acc, item) => acc + parseFloat(item.total_price || 0),
+      0
+    );
+  }, [myCartProducts]);
+
+  // 🏠 Fetch user's saved addresses
+  const handleOrderClick = async () => {
+    setShowAddressModal(true);
+    setFetchingAddresses(true);
+    try {
+      const res = await axios.get(
+        "https://neil-backend-1.onrender.com/address/my-address",
+        {
+          headers: { Authorization: `Bearer ${accessToken}` },
+        }
+      );
+      setAddresses(res.data.addresses || []);
+    } catch (err) {
+      console.error("Error fetching addresses:", err);
+      setAddresses([]);
+    } finally {
+      setFetchingAddresses(false);
+    }
+  };
+
+  // ➕ Save new address
+  const handleSaveAddress = async (e) => {
     e.preventDefault();
     try {
+      setSavingAddress(true);
       await axios.post(
         "https://neil-backend-1.onrender.com/address/new-address",
         newAddress,
-        { headers: { Authorization: `Bearer ${accessToken}` } }
+        {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            "Content-Type": "application/json",
+          },
+        }
       );
-      alert("✅ Address added successfully!");
+      alert("✅ Address added successfully.");
+      setShowNewAddressForm(false);
       setNewAddress({
-        type: "shipping",
+        type: "",
         address_line_1: "",
         address_line_2: "",
         city: "",
@@ -97,303 +136,390 @@ function Cart() {
         country: "",
         is_default: false,
       });
-      // refetch addresses
-      const res = await axios.get(
-        "https://neil-backend-1.onrender.com/address/my-address",
-        { headers: { Authorization: `Bearer ${accessToken}` } }
-      );
-      setAddresses(res.data.addresses || []);
+      handleOrderClick(); // refresh list
     } catch (err) {
-      alert(
-        err.response?.data?.message || "❌ Failed to add address. Try again."
-      );
-    }
-  };
-
-  // 🧾 Checkout handler
-  const handleCheckout = async () => {
-    if (!selectedShipping || !selectedBilling) {
-      alert("⚠️ Please select both billing and shipping addresses.");
-      return;
-    }
-
-    try {
-      const res = await axios.post(
-        "https://neil-backend-1.onrender.com/checkout/new",
-        {
-          user,
-          cart,
-          totalAmount,
-          shipping_address_id: selectedShipping,
-          billing_address_id: selectedBilling,
-        },
-        {
-          headers: { Authorization: `Bearer ${accessToken}` },
-        }
-      );
-
-      alert(
-        `✅ Order placed successfully! Order ID: ${
-          res.data.orderBatchId || res.data.orderId
-        }`
-      );
-      cart.forEach((item) => removeFromCart(item.id));
-      navigate("/orders");
-    } catch (err) {
-      if (err.response?.status === 401) {
-        alert("⚠️ Please login to continue checkout.");
-        navigate("/login");
-      } else {
-        alert("❌ Failed to place order. Please try again.");
-      }
-    }
-  };
-
-  // 🛒 Quantity change
-  const handleQuantityChange = (item, newQuantity) => {
-    const qty = Math.max(0, parseInt(newQuantity, 10) || 0);
-    if (qty === 0) {
-      removeFromCart(item.id);
-    } else {
-      addToCart({ ...item, quantity: qty - item.quantity });
+      console.error("Error saving address:", err);
+      alert(err.response?.data?.message || "Failed to save address.");
+    } finally {
+      setSavingAddress(false);
     }
   };
 
   return (
     <>
       <TopBar />
-      <Container className="py-4">
-        <h3 className="mb-4">🛒 Your Cart</h3>
+      <Container className="mt-5 pt-5">
+        <h3 className="mb-4 fw-bold text-primary">🛒 My Cart</h3>
 
-        {/* 🛍 Cart Section */}
-        {!cart || cart.length === 0 ? (
-          <Alert variant="info" className="text-center py-4">
-            Your cart is empty. <br />
-            <Button
-              variant="primary"
-              className="mt-3"
-              onClick={() => navigate("/products")}
-            >
-              Browse Products
-            </Button>
-          </Alert>
+        {loading ? (
+          <div className="text-center mt-5">
+            <Spinner animation="border" />
+          </div>
+        ) : myCartProducts.length === 0 ? (
+          <p className="text-muted">Your cart is empty.</p>
         ) : (
-          <Card className="shadow-sm border-0">
-            <Card.Body>
-              <Table responsive hover className="align-middle">
-                <thead>
-                  <tr>
-                    <th className="text-center">Title</th>
-                    <th className="text-center">Quantity</th>
-                    <th className="text-center">Price</th>
-                    <th className="text-center">Subtotal</th>
-                    <th className="text-center">Action</th>
+          <>
+            <Table bordered hover responsive className="shadow-sm align-middle">
+              <thead className="table-light">
+                <tr>
+                  <th>#</th>
+                  <th>Product</th>
+                  <th>Sizes & Quantities</th>
+                  <th>Total Price ($)</th>
+                  <th className="text-center">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {myCartProducts.map((item, index) => (
+                  <tr key={item.id}>
+                    <td>{index + 1}</td>
+                    <td className="d-flex align-items-center gap-3">
+                      <Image
+                        src={item.image}
+                        alt={item.title}
+                        width={60}
+                        height={60}
+                        rounded
+                      />
+                      <span>{item.title}</span>
+                    </td>
+                    <td>
+                      {Object.entries(item.sizes || {}).map(([size, details]) => (
+                        <div key={size}>
+                          <strong>{size.toUpperCase()}</strong>: {details.qty} × $
+                          {details.price} = ${details.subtotal}
+                        </div>
+                      ))}
+                    </td>
+                    <td className="fw-semibold">${item.total_price}</td>
+                    <td className="text-center">
+                      <Button
+                        variant="outline-danger"
+                        size="sm"
+                        onClick={() => handleDelete(item.id)}
+                        disabled={deletingId === item.id}
+                      >
+                        {deletingId === item.id ? (
+                          <Spinner
+                            as="span"
+                            animation="border"
+                            size="sm"
+                            role="status"
+                          />
+                        ) : (
+                          "🗑️ Delete"
+                        )}
+                      </Button>
+                    </td>
                   </tr>
-                </thead>
-                <tbody>
-                  {cart.map((item) => (
-                    <tr key={item.id}>
-                      <td className="text-center">{item.title}</td>
-                      <td className="text-center" style={{ width: "100px" }}>
-                        <Form.Control
-                          type="number"
-                          min="0"
-                          value={item.quantity}
-                          onChange={(e) =>
-                            handleQuantityChange(item, e.target.value)
-                          }
-                        />
-                      </td>
-                      <td className="text-center">${item.unit_price}</td>
-                      <td className="text-center">
-                        $
-                        {(
-                          parseFloat(item.unit_price) * item.quantity
-                        ).toFixed(2)}
-                      </td>
-                      <td className="text-center">
-                        <Button
-                          variant="outline-danger"
-                          size="sm"
-                          onClick={() => removeFromCart(item.id)}
-                        >
-                          🗑 Remove
-                        </Button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </Table>
+                ))}
 
-              {/* 🏠 Address Section */}
-              <div className="mt-4 border-top pt-3">
-                <h5>Select Address</h5>
+                <tr className="table-secondary fw-bold">
+                  <td colSpan={3} className="text-end">
+                    Subtotal:
+                  </td>
+                  <td colSpan={2}>${subtotal.toFixed(2)}</td>
+                </tr>
+              </tbody>
+            </Table>
 
-                {loadingAddresses ? (
-                  <div className="text-center p-3">
-                    <Spinner animation="border" />
-                  </div>
-                ) : addresses.length > 0 ? (
-                  <>
-                    <Row>
-                      <Col md={6}>
-                        <Form.Group className="mb-3">
-                          <Form.Label>Shipping Address</Form.Label>
-                          <Form.Select
-                            value={selectedShipping || ""}
-                            onChange={(e) =>
-                              setSelectedShipping(e.target.value)
-                            }
-                          >
-                            <option value="">Select shipping address</option>
-                            {addresses.map((a) => (
-                              <option key={a.id} value={a.id}>
-                                {a.address_line1}, {a.city}, {a.state}
-                              </option>
-                            ))}
-                          </Form.Select>
-                        </Form.Group>
-                      </Col>
-
-                      <Col md={6}>
-                        <Form.Group className="mb-3">
-                          <Form.Label>Billing Address</Form.Label>
-                          <Form.Select
-                            value={selectedBilling || ""}
-                            onChange={(e) => setSelectedBilling(e.target.value)}
-                          >
-                            <option value="">Select billing address</option>
-                            {addresses.map((a) => (
-                              <option key={a.id} value={a.id}>
-                                {a.address_line1}, {a.city}, {a.state}
-                              </option>
-                            ))}
-                          </Form.Select>
-                        </Form.Group>
-                      </Col>
-                    </Row>
-                  </>
-                ) : (
-                  <>
-                    <Alert variant="info">
-                      No addresses found. Add one below 👇
-                    </Alert>
-
-                    <Form onSubmit={handleAddAddress}>
-                      <Row>
-                        <Col md={6}>
-                          <Form.Group className="mb-2">
-                            <Form.Label>Address Line 1</Form.Label>
-                            <Form.Control
-                              required
-                              value={newAddress.address_line_1}
-                              onChange={(e) =>
-                                setNewAddress({
-                                  ...newAddress,
-                                  address_line_1: e.target.value,
-                                })
-                              }
-                            />
-                          </Form.Group>
-                        </Col>
-                        <Col md={6}>
-                          <Form.Group className="mb-2">
-                            <Form.Label>City</Form.Label>
-                            <Form.Control
-                              required
-                              value={newAddress.city}
-                              onChange={(e) =>
-                                setNewAddress({
-                                  ...newAddress,
-                                  city: e.target.value,
-                                })
-                              }
-                            />
-                          </Form.Group>
-                        </Col>
-                      </Row>
-
-                      <Row>
-                        <Col md={6}>
-                          <Form.Group className="mb-2">
-                            <Form.Label>State</Form.Label>
-                            <Form.Control
-                              required
-                              value={newAddress.state}
-                              onChange={(e) =>
-                                setNewAddress({
-                                  ...newAddress,
-                                  state: e.target.value,
-                                })
-                              }
-                            />
-                          </Form.Group>
-                        </Col>
-                        <Col md={6}>
-                          <Form.Group className="mb-2">
-                            <Form.Label>Postal Code</Form.Label>
-                            <Form.Control
-                              required
-                              value={newAddress.postal_code}
-                              onChange={(e) =>
-                                setNewAddress({
-                                  ...newAddress,
-                                  postal_code: e.target.value,
-                                })
-                              }
-                            />
-                          </Form.Group>
-                        </Col>
-                      </Row>
-
-                      <Row>
-                        <Col md={6}>
-                          <Form.Group className="mb-2">
-                            <Form.Label>Country</Form.Label>
-                            <Form.Control
-                              required
-                              value={newAddress.country}
-                              onChange={(e) =>
-                                setNewAddress({
-                                  ...newAddress,
-                                  country: e.target.value,
-                                })
-                              }
-                            />
-                          </Form.Group>
-                        </Col>
-                        <Col md={6} className="d-flex align-items-end">
-                          <Button type="submit" variant="primary">
-                            Add Address
-                          </Button>
-                        </Col>
-                      </Row>
-                    </Form>
-                  </>
-                )}
-              </div>
-
-              {/* 💰 Checkout Section */}
-              <Row className="mt-4">
-                <Col md={6}></Col>
-                <Col
-                  md={6}
-                  className="d-flex flex-column align-items-end border-top pt-3"
-                >
-                  <h5 className="fw-bold">Total: ${totalAmount}</h5>
-                  <Button
-                    variant="success"
-                    className="mt-3 px-4"
-                    onClick={handleCheckout}
-                  >
-                    Order
-                  </Button>
-                </Col>
-              </Row>
-            </Card.Body>
-          </Card>
+            <div className="text-end mt-3">
+              <Button variant="success" size="lg" onClick={handleOrderClick}>
+                🛍️ Order
+              </Button>
+            </div>
+          </>
         )}
       </Container>
+
+      {/* 🏠 Address Modal */}
+     <Modal
+  show={showAddressModal}
+  onHide={() => setShowAddressModal(false)}
+  size="lg"
+  centered
+  className="form-box"
+>
+  <Modal.Header closeButton>
+    <Modal.Title>Select Shipping & Billing Addresses</Modal.Title>
+  </Modal.Header>
+  <Modal.Body>
+    {fetchingAddresses ? (
+      <div className="text-center py-4">
+        <Spinner animation="border" />
+      </div>
+    ) : (
+      <div className="row">
+        {/* 🏠 Shipping Address */}
+        <div className="col-md-6 border-end">
+          <h5 className="fw-bold mb-3 text-primary">Shipping Address</h5>
+
+          {addresses.length > 0 ? (
+            <>
+              <Form.Group className="mb-3">
+                <Form.Select
+                  value={selectedShipping || ""}
+                  onChange={(e) => setSelectedShipping(e.target.value)}
+                >
+                  <option value="">Select Shipping Address</option>
+                  {addresses.map((addr) => (
+                    <option key={addr.id} value={addr.id}>
+                      {addr.type} - {addr.city}, {addr.state}
+                    </option>
+                  ))}
+                </Form.Select>
+              </Form.Group>
+              <Button
+                variant="outline-primary"
+                size="sm"
+                onClick={() => {
+                  setShowNewAddressForm(true);
+                  setAddressContext("shipping");
+                }}
+              >
+                ➕ Add New Shipping Address
+              </Button>
+            </>
+          ) : (
+            <div className="text-center">
+              <p>No addresses found.</p>
+              <Button
+                variant="outline-primary"
+                size="sm"
+                onClick={() => {
+                  setShowNewAddressForm(true);
+                  setAddressContext("shipping");
+                }}
+              >
+                ➕ Add Address
+              </Button>
+            </div>
+          )}
+        </div>
+
+        {/* 💳 Billing Address */}
+        <div className="col-md-6">
+          <h5 className="fw-bold mb-3 text-success">Billing Address</h5>
+
+          {addresses.length > 0 ? (
+            <>
+              <Form.Group className="mb-3">
+                <Form.Select
+                  value={selectedBilling || ""}
+                  onChange={(e) => setSelectedBilling(e.target.value)}
+                >
+                  <option value="">Select Billing Address</option>
+                  {addresses.map((addr) => (
+                    <option key={addr.id} value={addr.id}>
+                      {addr.type} - {addr.city}, {addr.state}
+                    </option>
+                  ))}
+                </Form.Select>
+              </Form.Group>
+              <Button
+                variant="outline-success"
+                size="sm"
+                onClick={() => {
+                  setShowNewAddressForm(true);
+                  setAddressContext("billing");
+                }}
+              >
+                ➕ Add New Billing Address
+              </Button>
+            </>
+          ) : (
+            <div className="text-center">
+              <p>No addresses found.</p>
+              <Button
+                variant="outline-success"
+                size="sm"
+                onClick={() => {
+                  setShowNewAddressForm(true);
+                  setAddressContext("billing");
+                }}
+              >
+                ➕ Add Address
+              </Button>
+            </div>
+          )}
+        </div>
+      </div>
+    )}
+
+    {/* ➕ Add Address Form */}
+    {showNewAddressForm && (
+      <div className="mt-4 border-top pt-3">
+        <h6 className="fw-bold">
+          Add New {addressContext === "shipping" ? "Shipping" : "Billing"} Address
+        </h6>
+        <Form className="mt-3" onSubmit={handleSaveAddress}>
+          <Form.Group className="mb-2">
+            <Form.Label>Type</Form.Label>
+            <Form.Control
+              type="text"
+              value={newAddress.type}
+              onChange={(e) =>
+                setNewAddress({ ...newAddress, type: e.target.value })
+              }
+            />
+          </Form.Group>
+          <Form.Group className="mb-2">
+            <Form.Label>Address Line 1</Form.Label>
+            <Form.Control
+              type="text"
+              value={newAddress.address_line_1}
+              onChange={(e) =>
+                setNewAddress({ ...newAddress, address_line_1: e.target.value })
+              }
+            />
+          </Form.Group>
+          <Form.Group className="mb-2">
+            <Form.Label>Address Line 2</Form.Label>
+            <Form.Control
+              type="text"
+              value={newAddress.address_line_2}
+              onChange={(e) =>
+                setNewAddress({ ...newAddress, address_line_2: e.target.value })
+              }
+            />
+          </Form.Group>
+          <div className="row">
+            <div className="col-md-6">
+              <Form.Group className="mb-2">
+                <Form.Label>City</Form.Label>
+                <Form.Control
+                  type="text"
+                  value={newAddress.city}
+                  onChange={(e) =>
+                    setNewAddress({ ...newAddress, city: e.target.value })
+                  }
+                />
+              </Form.Group>
+            </div>
+            <div className="col-md-6">
+              <Form.Group className="mb-2">
+                <Form.Label>State</Form.Label>
+                <Form.Control
+                  type="text"
+                  value={newAddress.state}
+                  onChange={(e) =>
+                    setNewAddress({ ...newAddress, state: e.target.value })
+                  }
+                />
+              </Form.Group>
+            </div>
+          </div>
+          <div className="row">
+            <div className="col-md-6">
+              <Form.Group className="mb-2">
+                <Form.Label>Postal Code</Form.Label>
+                <Form.Control
+                  type="text"
+                  value={newAddress.postal_code}
+                  onChange={(e) =>
+                    setNewAddress({ ...newAddress, postal_code: e.target.value })
+                  }
+                />
+              </Form.Group>
+            </div>
+            <div className="col-md-6">
+              <Form.Group className="mb-2">
+                <Form.Label>Country</Form.Label>
+                <Form.Control
+                  type="text"
+                  value={newAddress.country}
+                  onChange={(e) =>
+                    setNewAddress({ ...newAddress, country: e.target.value })
+                  }
+                />
+              </Form.Group>
+            </div>
+          </div>
+
+          <Form.Check
+            type="checkbox"
+            label="Set as default"
+            checked={newAddress.is_default}
+            onChange={(e) =>
+              setNewAddress({ ...newAddress, is_default: e.target.checked })
+            }
+          />
+
+          <div className="text-end mt-3">
+            <Button type="submit" variant="success" disabled={savingAddress}>
+              {savingAddress ? (
+                <Spinner animation="border" size="sm" />
+              ) : (
+                "Save Address"
+              )}
+            </Button>
+          </div>
+        </Form>
+      </div>
+    )}
+  </Modal.Body>
+
+  <Modal.Footer className="d-flex justify-content-between">
+    <Button variant="secondary" onClick={() => setShowAddressModal(false)}>
+      Cancel
+    </Button>
+    <Button
+  variant="success"
+  disabled={!selectedShipping || !selectedBilling}
+  onClick={async () => {
+    try {
+      setShowAddressModal(false);
+
+      // ✅ Start loading (optional)
+      setLoading(true);
+
+      const payload = {
+        user_id: user.id,
+        org_id: user.org_id || 1, // replace with your actual org id logic
+        shipping_address_id: selectedShipping,
+        billing_address_id: selectedBilling,
+        payment_method: "COD", // or whatever default you want
+      };
+
+      const res = await axios.post(
+        "https://neil-backend-1.onrender.com/checkout/create",
+        payload,
+        {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      if (res.data.success) {
+        alert(`✅ Order placed successfully! Order ID: ${res.data.order_id}`);
+        // You could also redirect:
+        navigate(`/orders`);
+      } else {
+        alert("⚠️ Failed to create order. Please try again.");
+      }
+    } catch (err) {
+      console.error("Order creation failed:", err);
+      alert(
+        err.response?.data?.message ||
+          "❌ Something went wrong while creating your order."
+      );
+    } finally {
+      setLoading(false);
+    }
+  }}
+>
+  {loading ? (
+    <Spinner animation="border" size="sm" />
+  ) : (
+    "Confirm & Place Order"
+  )}
+</Button>
+
+  </Modal.Footer>
+</Modal>
+
     </>
   );
 }

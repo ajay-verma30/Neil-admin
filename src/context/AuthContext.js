@@ -34,39 +34,9 @@ const clientCleanup = () => {
   setMode(null);
 };
 
+axios.defaults.withCredentials = true;
+axios.defaults.baseURL = "https://neil-backend-1.onrender.com";
 
-    // ==============================
-  // Cart Logic
-  // ==============================
-
-  useEffect(() => {
-    const savedCart = localStorage.getItem("user_cart");
-    if (savedCart) setCart(JSON.parse(savedCart));
-  }, []);
-
-  useEffect(() => {
-    localStorage.setItem("user_cart", JSON.stringify(cart));
-  }, [cart]);
-
-  const addToCart = (item) => {
-    setCart((prev) => {
-      const existing = prev.find((p) => p.id === item.id);
-      if (existing) {
-        return prev.map((p) =>
-          p.id === item.id ? { ...p, quantity: p.quantity + item.quantity } : p
-        );
-      }
-      return [...prev, item];
-    });
-  };
-
-  const removeFromCart = (id) => {
-    setCart((prev) => prev.filter((item) => item.id !== id));
-  };
-
-  const clearCart = () => setCart([]);
-
-  const cartCount = cart.reduce((sum, item) => sum + (item.quantity || 1), 0);
 
   // Refresh token
   const refreshAccessToken = async () => {
@@ -205,11 +175,6 @@ const clientCleanup = () => {
         refreshAccessToken,
         logout,
         loading,
-         cart,
-        addToCart,
-        removeFromCart,
-        clearCart,
-        cartCount,
          mode, setMode 
       }}
     >
