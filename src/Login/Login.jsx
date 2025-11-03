@@ -115,14 +115,14 @@ function Login() {
                   </div>
                 </Form>
 
-                <div className="text-center mt-4">
+                {/* <div className="text-center mt-4">
                   <p className="text-muted">
                     Forgot password?{" "}
                     <span className="text-danger fw-semibold" style={{ cursor: "pointer" }}>
                       Reset
                     </span>
                   </p>
-                </div>
+                </div> */}
               </Card.Body>
             </Card>
           </Col>
