@@ -162,9 +162,6 @@ function NewUser() {
                     <option value="User">User</option>
                     <option value="Admin">Admin</option>
                     <option value="Manager">Manager</option>
-                    {user.role === "Super Admin" && (
-                      <option value="Super Admin">Super Admin</option>
-                    )}
                   </Form.Select>
                 </Col>
               </Row>
