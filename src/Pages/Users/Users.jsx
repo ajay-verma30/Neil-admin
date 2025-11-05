@@ -301,9 +301,9 @@ const addNewUser = () => {
                           >
                             <FontAwesomeIcon icon={faPencil} />
                           </button>
-                          <Button className="btn-primary shop-as-user" onClick={userNav}>
+                          {/* <Button className="btn-primary shop-as-user" onClick={userNav}>
   Shop As User
-</Button>
+</Button> */}
                         </td>
                       </tr>
                     ))

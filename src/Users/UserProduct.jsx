@@ -157,11 +157,6 @@ function UserProduct() {
       setIsProcessing(false);
       return;
     }
-    if (!selectedVariantId || !selectedLogoVariantId || selectedPlacementIds.length === 0) {
-      setMessage("⚠️ Please select a product variant, logo, and placement.");
-      setIsProcessing(false);
-      return;
-    }
     try {
       const previewEl = document.getElementById("product-preview-area");
       if (!previewEl) throw new Error("Preview element not found.");
