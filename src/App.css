@@ -22,3 +22,8 @@ body{
 .card-body{
   background-color: #f8fafc !important;
 }
+
+
+.reset-password-btn{
+  width: 15%;
+}

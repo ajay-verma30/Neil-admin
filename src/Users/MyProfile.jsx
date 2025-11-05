@@ -32,8 +32,33 @@ function MyProfile() {
   const [error, setError] = useState(null);
   const [message, setMessage] = useState(null);
 
-  // Modal state
-  const [showModal, setShowModal] = useState(false);
+  // Password form state
+  const [passwordData, setPasswordData] = useState({
+    current_password: "",
+    new_password: "",
+    confirm_password: "",
+  });
+
+  // Modal states
+  const [showModal, setShowModal] = useState(false); // Address modal
+  const [showPasswordModal, setShowPasswordModal] = useState(false); // Password modal
+
+  // Address form states
+  const [editMode, setEditMode] = useState(false);
+  const [selectedAddressId, setSelectedAddressId] = useState(null);
+  const [address, setAddress] = useState({
+    type: "",
+    address_line_1: "",
+    address_line_2: "",
+    city: "",
+    state: "",
+    postal_code: "",
+    country: "",
+    is_default: "",
+  });
+
+  // === Address modal handlers ===
+  const handleShow = () => setShowModal(true);
   const handleClose = () => {
     setShowModal(false);
     setEditMode(false);
@@ -49,24 +74,12 @@ function MyProfile() {
       is_default: "",
     });
   };
-  const handleShow = () => setShowModal(true);
 
-  const [editMode, setEditMode] = useState(false);
-  const [selectedAddressId, setSelectedAddressId] = useState(null);
+  // === Password modal handlers ===
+  const handlePasswordShow = () => setShowPasswordModal(true);
+  const handlePasswordClose = () => setShowPasswordModal(false);
 
-  // Address form state
-  const [address, setAddress] = useState({
-    type: "",
-    address_line_1: "",
-    address_line_2: "",
-    city: "",
-    state: "",
-    postal_code: "",
-    country: "",
-    is_default: "",
-  });
-
-  // Fetch user profile
+  // === Fetch user profile ===
   useEffect(() => {
     const getMyUser = async () => {
       try {
@@ -81,12 +94,15 @@ function MyProfile() {
     getMyUser();
   }, [accessToken]);
 
-  // Fetch user addresses
+  // === Fetch user addresses ===
   const fetchAddresses = async () => {
     try {
-      const res = await axios.get("https://neil-backend-1.onrender.com/address/my-address", {
-        headers: { Authorization: `Bearer ${accessToken}` },
-      });
+      const res = await axios.get(
+        "https://neil-backend-1.onrender.com/address/my-address",
+        {
+          headers: { Authorization: `Bearer ${accessToken}` },
+        }
+      );
       setAddresses(res.data.addresses || []);
     } catch (err) {
       if (err.response?.status === 404) {
@@ -103,13 +119,12 @@ function MyProfile() {
     fetchAddresses();
   }, [accessToken]);
 
-  // Handle form input
+  // === Address Handlers ===
   const handleChange = (e) => {
     const { name, value } = e.target;
     setAddress((prev) => ({ ...prev, [name]: value }));
   };
 
-  // Edit handler
   const handleEdit = (addr) => {
     setAddress({
       type: addr.type,
@@ -126,7 +141,6 @@ function MyProfile() {
     setShowModal(true);
   };
 
-  // Submit handler (Add or Edit)
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError(null);
@@ -136,15 +150,11 @@ function MyProfile() {
       const apiUrl = editMode
         ? `http://localhost:3000/address/edit-address/${selectedAddressId}`
         : "http://localhost:3000/address/new-address";
-
       const method = editMode ? "put" : "post";
 
       const res = await axios[method](
         apiUrl,
-        {
-          ...address,
-          is_default: address.is_default === "True",
-        },
+        { ...address, is_default: address.is_default === "True" },
         {
           headers: {
             Authorization: `Bearer ${accessToken}`,
@@ -155,7 +165,9 @@ function MyProfile() {
 
       setMessage(
         res.data.message ||
-          (editMode ? "Address updated successfully!" : "Address added successfully!")
+          (editMode
+            ? "Address updated successfully!"
+            : "Address added successfully!")
       );
       handleClose();
       fetchAddresses();
@@ -164,23 +176,63 @@ function MyProfile() {
     }
   };
 
-  // 🗑️ Handle delete address
-const handleDelete = async (id) => {
-  if (!window.confirm("Are you sure you want to delete this address?")) return;
+  const handleDelete = async (id) => {
+    if (!window.confirm("Are you sure you want to delete this address?")) return;
+    try {
+      const res = await axios.delete(
+        `https://neil-backend-1.onrender.com/address/delete-address/${id}`,
+        { headers: { Authorization: `Bearer ${accessToken}` } }
+      );
+      setMessage(res.data.message || "Address deleted successfully!");
+      fetchAddresses();
+    } catch (err) {
+      setError(err.response?.data?.message || "Failed to delete address.");
+    }
+  };
+
+  // === Password Handlers ===
+  const handlePasswordChange = (e) => {
+    const { name, value } = e.target;
+    setPasswordData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handlePasswordSubmit = async (e) => {
+  e.preventDefault();
+  setError(null);
+  setMessage(null);
+
+  if (passwordData.new_password !== passwordData.confirm_password) {
+    setError("New passwords do not match.");
+    return;
+  }
 
   try {
-    const res = await axios.delete(
-      `https://neil-backend-1.onrender.com/address/delete-address/${id}`,
+    const res = await axios.patch(
+      `https://neil-backend-1.onrender.com/users/${user.id}/reset-password`,
       {
-        headers: { Authorization: `Bearer ${accessToken}` },
+        oldPassword: passwordData.current_password,
+        newPassword: passwordData.new_password,
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+        },
       }
     );
-    setMessage(res.data.message || "Address deleted successfully!");
-    fetchAddresses(); 
+
+    setMessage(res.data.message || "Password updated successfully!");
+    handlePasswordClose();
+    setPasswordData({
+      current_password: "",
+      new_password: "",
+      confirm_password: "",
+    });
   } catch (err) {
-    setError(err.response?.data?.message || "Failed to delete address.");
+    setError(err.response?.data?.message || "Failed to update password.");
   }
 };
+
 
   const formattedJoinDate = myUser?.created_at
     ? new Date(myUser.created_at).toLocaleDateString()
@@ -212,17 +264,8 @@ const handleDelete = async (id) => {
                 </div>
               )}
 
-              {error && (
-                <Alert variant="danger" className="mt-3">
-                  {error}
-                </Alert>
-              )}
-
-              {message && (
-                <Alert variant="success" className="mt-3">
-                  {message}
-                </Alert>
-              )}
+              {error && <Alert variant="danger">{error}</Alert>}
+              {message && <Alert variant="success">{message}</Alert>}
 
               {!loading && myUser && (
                 <>
@@ -245,6 +288,12 @@ const handleDelete = async (id) => {
                         </Badge>
                       </div>
                     </div>
+                    <Button
+                      className="bg-primary border-0 reset-password-btn" 
+                      onClick={handlePasswordShow}
+                    >
+                      Reset Password
+                    </Button>
                   </Card>
 
                   <Row>
@@ -310,7 +359,11 @@ const handleDelete = async (id) => {
                                   </div>
                                   <div className="text-end">
                                     {addr.is_default === 1 && (
-                                      <Badge bg="success" className="mb-2 badge" style={{marginRight:"20px"}}>
+                                      <Badge
+                                        bg="success"
+                                        className="mb-2"
+                                        style={{ marginRight: "20px" }}
+                                      >
                                         Default
                                       </Badge>
                                     )}
@@ -322,13 +375,13 @@ const handleDelete = async (id) => {
                                       Edit
                                     </Button>
                                     <Button
-  size="sm"
-  variant="outline-danger"
-  style={{ marginLeft: "10px" }}
-  onClick={() => handleDelete(addr.id)}
->
-  <FontAwesomeIcon icon={faTrash} />
-</Button>
+                                      size="sm"
+                                      variant="outline-danger"
+                                      style={{ marginLeft: "10px" }}
+                                      onClick={() => handleDelete(addr.id)}
+                                    >
+                                      <FontAwesomeIcon icon={faTrash} />
+                                    </Button>
                                   </div>
                                 </div>
                               </Card>
@@ -349,12 +402,10 @@ const handleDelete = async (id) => {
         </Col>
       </Row>
 
-      {/* 🧩 Modal for Add/Edit Address */}
+      {/* 🏠 Address Modal */}
       <Modal show={showModal} onHide={handleClose} centered>
         <Modal.Header closeButton>
-          <Modal.Title>
-            {editMode ? "Edit Address" : "Add New Address"}
-          </Modal.Title>
+          <Modal.Title>{editMode ? "Edit Address" : "Add New Address"}</Modal.Title>
         </Modal.Header>
         <Modal.Body>
           <Form onSubmit={handleSubmit}>
@@ -481,6 +532,62 @@ const handleDelete = async (id) => {
               </Button>
               <Button type="submit" variant="primary">
                 {editMode ? "Update Address" : "Save Address"}
+              </Button>
+            </div>
+          </Form>
+        </Modal.Body>
+      </Modal>
+
+      {/* 🔒 Reset Password Modal */}
+      <Modal show={showPasswordModal} onHide={handlePasswordClose} centered>
+        <Modal.Header closeButton>
+          <Modal.Title>Reset Password</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <Form onSubmit={handlePasswordSubmit}>
+            <Form.Group className="mb-3">
+              <Form.Label>Current Password</Form.Label>
+              <Form.Control
+                type="password"
+                name="current_password"
+                value={passwordData.current_password}
+                onChange={handlePasswordChange}
+                required
+              />
+            </Form.Group>
+
+            <Form.Group className="mb-3">
+              <Form.Label>New Password</Form.Label>
+              <Form.Control
+                type="password"
+                name="new_password"
+                value={passwordData.new_password}
+                onChange={handlePasswordChange}
+                required
+              />
+            </Form.Group>
+
+            <Form.Group className="mb-3">
+              <Form.Label>Confirm New Password</Form.Label>
+              <Form.Control
+                type="password"
+                name="confirm_password"
+                value={passwordData.confirm_password}
+                onChange={handlePasswordChange}
+                required
+              />
+            </Form.Group>
+
+            <div className="d-flex justify-content-end mt-3">
+              <Button
+                variant="secondary"
+                onClick={handlePasswordClose}
+                className="me-2"
+              >
+                Cancel
+              </Button>
+              <Button type="submit" variant="primary">
+                Update Password
               </Button>
             </div>
           </Form>
