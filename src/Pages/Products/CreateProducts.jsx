@@ -32,6 +32,7 @@ function CreateProducts() {
         title: "",
         description: "",
         price: "", // Base Price
+        actual_price:"",
         productImages: null,
     });
 
@@ -380,10 +381,20 @@ function CreateProducts() {
                                 <Form.Control name="description" value={formData.description} onChange={handleChange} as="textarea" rows={4} placeholder="Product description..." required />
                             </Form.Group>
 
-                            <Form.Group className="mb-3">
+                            <Row>
+                                <Col xs={6} md={6}>
+                                                            <Form.Group className="mb-3">
                                 <Form.Label>Base Price</Form.Label>
                                 <Form.Control name="price" value={formData.price} onChange={handleChange} type="number" step="0.01" min="0" placeholder="Base Price" required />
                             </Form.Group>
+                                </Col>
+                                <Col xs={6} md={6}>
+                                                            <Form.Group className="mb-3">
+                                <Form.Label>Actual Price</Form.Label>
+                                <Form.Control name="actual_price" value={formData.actual_price} onChange={handleChange} type="number" step="0.01" min="0" placeholder="Actual Price Price" />
+                            </Form.Group>
+                                </Col>
+                            </Row>
 
                             <Form.Group className="mb-3">
                                 <Form.Label>Upload Product Images (Max 5)</Form.Label>
