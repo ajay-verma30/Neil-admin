@@ -163,7 +163,7 @@ menuItems = [
     if (parentIndex !== null && openGroup !== parentIndex) {
       setOpenGroup(parentIndex);
     }
-  }, [location.pathname]);
+  }, [location.pathname, openGroup]);
 
   const handleMenuClick = (index) => {
     setOpenGroup(openGroup === index ? null : index);
