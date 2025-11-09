@@ -106,42 +106,6 @@ menuItems = [
       { title: "Orders", icon: faBoxOpen, path: `/${effectiveOrgId}/orders` },
     ]
 }
-
-
-  // menuItems = [
-  //   {
-  //     title: "Dashboard",
-  //     icon: faTachometerAlt,
-  //     path: `/${org_id}`,
-  //   },
-  //   {
-  //     title: "Users & Groups",
-  //     icon: faUsers,
-  //     children: [
-  //       { title: "Users", icon: faUser, path: `/${org_id}/users` },
-  //       { title: "Groups", icon: faUserFriends, path: `/${org_id}/groups` }
-  //     ],
-  //   },
-  //   {
-  //     title: "Products & Categories",
-  //     icon: faCubes,
-  //     children: [
-  //       { title: "Products", icon: faBox, path: `/${org_id}/products` },
-  //       { title: "Sub-Categories", icon: faFolderTree, path: `/${org_id}/sub-categories` },
-  //       { title: "Logos", icon: faHelicopterSymbol, path: `/${org_id}/logos` },
-  //     ],
-  //   },
-  //   {
-  //     title: "Organizations",
-  //     icon: faBuildingUser,
-  //     children: [
-  //       { title: "Details", icon: faList, path: `/${org_id}/products` },
-  //       { title: "Our Products", icon: faBoxOpen, path: `/${org_id}/sub-categories` },
-  //       { title: "Logos", icon: faHelicopterSymbol, path: `/${org_id}/logos` },
-  //     ],
-  //   },
-  // ];
-
   const isActive = (path) => location.pathname === path;
 
   const findOpenGroupIndex = (pathname) => {
