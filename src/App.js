@@ -31,6 +31,7 @@ import FullOrders from './Pages/Orders/Orders'
 import SpecificOrder from './Pages/Orders/SpecificOrder';
 import MyProfile from './Users/MyProfile';
 import { AllProviders } from './context/AllProviders';
+import Categories from './Pages/SubCategories/Categories';
 
 function AppRoutes() {
   const { user } = useContext(AuthContext);
@@ -55,6 +56,7 @@ function AppRoutes() {
           <Route path='/admin/groups' element={<ProtectedRoute><Groups /></ProtectedRoute>} />
           <Route path='/admin/products' element={<ProtectedRoute><Products /></ProtectedRoute>} />
           <Route path='/admin/products/new' element={<ProtectedRoute><CreateProducts /></ProtectedRoute>} />
+          <Route path='/admin/categories' element={<ProtectedRoute><Categories /></ProtectedRoute>} />
           <Route path='/admin/sub-categories' element={<ProtectedRoute><SubCategories /></ProtectedRoute>} />
           <Route path='/admin/products/:id' element={<ProtectedRoute><SpecificProduct /></ProtectedRoute>} />
           <Route path='/admin/logos' element={<ProtectedRoute><Logos /></ProtectedRoute>} />
@@ -76,6 +78,7 @@ function AppRoutes() {
           <Route path='/:org_id/products' element={<ProtectedRoute><Products /></ProtectedRoute>} />
           {/* <Route path='/:org_id/orders' element={<ProtectedRoute><Users /></ProtectedRoute>} /> */}
           <Route path='/:org_id/products/new' element={<ProtectedRoute><CreateProducts /></ProtectedRoute>} />
+          <Route path='/:org_id/categories' element={<ProtectedRoute><Categories /></ProtectedRoute>} />
           <Route path='/:org_id/sub-categories' element={<ProtectedRoute><SubCategories /></ProtectedRoute>} />
           <Route path='/:org_id/products/:id' element={<ProtectedRoute><SpecificProduct /></ProtectedRoute>} />
           <Route path='/:org_id/logos' element={<ProtectedRoute><Logos /></ProtectedRoute>} />

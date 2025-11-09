@@ -16,10 +16,12 @@ import { faPlus, faTrash } from "@fortawesome/free-solid-svg-icons";
 import TopBar from "../../Components/TopBar/TopBar";
 import Sidebar from "../../Components/SideBar/SideBar";
 import { AuthContext } from "../../context/AuthContext";
-import { useParams } from "react-router-dom";
 
 const OverlayCard = ({ children }) => (
-  <div className="d-flex justify-content-center align-items-center" style={{ minHeight: "60vh" }}>
+  <div
+    className="d-flex justify-content-center align-items-center"
+    style={{ minHeight: "60vh" }}
+  >
     <Card className="shadow-sm text-center p-5" style={{ minWidth: "400px" }}>
       {children}
     </Card>
@@ -27,15 +29,17 @@ const OverlayCard = ({ children }) => (
 );
 
 function SubCategories() {
-  const { org_id } = useParams();
-  const { accessToken } = useContext(AuthContext);
+  const { accessToken, user } = useContext(AuthContext);
   const [showModal, setShowModal] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [subCategories, setSubCategories] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [organizations, setOrganizations] = useState([]);
   const [newSubCategory, setNewSubCategory] = useState({
     title: "",
-    category: "",
+    category_id: "",
+    org_id: "",
   });
 
   // Fetch all sub-categories
@@ -59,30 +63,62 @@ function SubCategories() {
     }
   };
 
+  // Fetch categories for dropdown
+  const getCategories = async () => {
+    try {
+      const res = await axios.get(
+        "https://neil-backend-1.onrender.com/categories/all",
+        { headers: { Authorization: `Bearer ${accessToken}` } }
+      );
+      setCategories(res.data.categories || []);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  // Fetch organizations (for Super Admin)
+  const getOrganizations = async () => {
+    if (user.role !== "Super Admin") return;
+    try {
+      const res = await axios.get(
+        "https://neil-backend-1.onrender.com/organization/all-organizations",
+        { headers: { Authorization: `Bearer ${accessToken}` } }
+      );
+      setOrganizations(res.data.organizations || []);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   useEffect(() => {
     if (accessToken) {
       getAllSubCategories();
+      getCategories();
+      getOrganizations();
     }
   }, [accessToken]);
 
   // Add new sub-category
   const addSubCategory = async () => {
-    const { title, category } = newSubCategory;
-
-    if (!title.trim() || !category.trim()) {
-      alert("Please enter both sub-category title and category.");
+    const { title, category_id, org_id } = newSubCategory;
+    if (!title.trim() || !category_id) {
+      alert("Please enter both sub-category title and parent category.");
       return;
     }
 
     try {
       await axios.post(
         "https://neil-backend-1.onrender.com/sub-categories/new",
-        { title, category, org_id },
+        {
+          title,
+          category_id,
+          org_id: user.role === "Super Admin" ? org_id || null : undefined,
+        },
         { headers: { Authorization: `Bearer ${accessToken}` } }
       );
       await getAllSubCategories();
       setShowModal(false);
-      setNewSubCategory({ title: "", category: "" });
+      setNewSubCategory({ title: "", category_id: "", org_id: "" });
     } catch (err) {
       alert(err.response?.data?.message || "Failed to add sub-category.");
     }
@@ -90,7 +126,8 @@ function SubCategories() {
 
   // Delete sub-category
   const deleteSubCategory = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this sub-category?")) return;
+    if (!window.confirm("Are you sure you want to delete this sub-category?"))
+      return;
 
     try {
       await axios.delete(
@@ -99,7 +136,10 @@ function SubCategories() {
       );
       setSubCategories((prev) => prev.filter((sc) => sc.id !== id));
     } catch (err) {
-      alert(err.response?.data?.message || "Failed to delete sub-category.");
+      alert(
+        err.response?.data?.message ||
+          "Failed to delete sub-category. You may not have permission."
+      );
     }
   };
 
@@ -116,7 +156,9 @@ function SubCategories() {
               <Card.Body>
                 <div className="d-flex align-items-center justify-content-between mb-4">
                   <div>
-                    <h4 className="fw-semibold mb-0 text-dark">Sub-Categories Management</h4>
+                    <h4 className="fw-semibold mb-0 text-dark">
+                      Sub-Categories Management
+                    </h4>
                     <small className="text-muted">
                       View, create, and manage sub-categories.
                     </small>
@@ -131,7 +173,6 @@ function SubCategories() {
                   </Button>
                 </div>
 
-                {/* Loading */}
                 {loading && (
                   <OverlayCard>
                     <Spinner animation="border" variant="primary" />
@@ -139,28 +180,24 @@ function SubCategories() {
                   </OverlayCard>
                 )}
 
-                {/* Error */}
                 {error && !loading && (
                   <OverlayCard>
                     <Alert variant="danger" className="mb-3">
                       {error}
                     </Alert>
-                    <Button
-                      variant="outline-danger"
-                      onClick={() => getAllSubCategories()}
-                    >
+                    <Button variant="outline-danger" onClick={getAllSubCategories}>
                       Retry
                     </Button>
                   </OverlayCard>
                 )}
 
-                {/* Table */}
                 {!loading && !error && (
                   <>
                     {subCategories.length === 0 ? (
                       <OverlayCard>
                         <Alert variant="info" className="mb-0">
-                          No sub-categories found. Click “Add Sub-Category” to create one.
+                          No sub-categories found. Click “Add Sub-Category” to create
+                          one.
                         </Alert>
                       </OverlayCard>
                     ) : (
@@ -170,7 +207,8 @@ function SubCategories() {
                             <tr>
                               <th>#</th>
                               <th>Sub-Category Title</th>
-                              <th>Category</th>
+                              <th>Parent Category</th>
+                              {user.role === "Super Admin" && <th>Organization</th>}
                               <th>Created At</th>
                               <th className="text-end">Actions</th>
                             </tr>
@@ -180,7 +218,10 @@ function SubCategories() {
                               <tr key={sub.id}>
                                 <td>{index + 1}</td>
                                 <td className="fw-medium text-dark">{sub.title}</td>
-                                <td>{sub.category}</td>
+                                <td>{sub.category_title || "-"}</td>
+                                {user.role === "Super Admin" && (
+                                  <td>{sub.org_title || "-"}</td>
+                                )}
                                 <td>{new Date(sub.created_at).toLocaleString()}</td>
                                 <td className="text-end">
                                   <Button
@@ -212,7 +253,7 @@ function SubCategories() {
         </Modal.Header>
         <Modal.Body>
           <Form>
-            <Form.Group className="mb-3" controlId="subCategoryTitle">
+            <Form.Group className="mb-3">
               <Form.Label>Sub-Category Title</Form.Label>
               <Form.Control
                 type="text"
@@ -224,23 +265,41 @@ function SubCategories() {
               />
             </Form.Group>
 
-            <Form.Group controlId="subCategoryCategory">
+            <Form.Group className="mb-3">
               <Form.Label>Parent Category</Form.Label>
               <Form.Select
-                value={newSubCategory.category}
+                value={newSubCategory.category_id}
                 onChange={(e) =>
-                  setNewSubCategory({ ...newSubCategory, category: e.target.value })
+                  setNewSubCategory({ ...newSubCategory, category_id: e.target.value })
                 }
               >
                 <option value="">Select Category</option>
-                <option value="Tshirts">Tshirts</option>
-                <option value="Mugs">Mugs</option>
-                <option value="Pens">Pens</option>
-                <option value="Bottles">Bottles</option>
-                <option value="Books">Books</option>
-                <option value="Hoodies">Hoodies</option>
+                {categories.map((cat) => (
+                  <option key={cat.id} value={cat.id}>
+                    {cat.title}
+                  </option>
+                ))}
               </Form.Select>
             </Form.Group>
+
+            {user.role === "Super Admin" && (
+              <Form.Group className="mb-3">
+                <Form.Label>Organization</Form.Label>
+                <Form.Select
+                  value={newSubCategory.org_id}
+                  onChange={(e) =>
+                    setNewSubCategory({ ...newSubCategory, org_id: e.target.value })
+                  }
+                >
+                  <option value="">Select Organization</option>
+                  {organizations.map((org) => (
+                    <option key={org.id} value={org.id}>
+                      {org.title}
+                    </option>
+                  ))}
+                </Form.Select>
+              </Form.Group>
+            )}
           </Form>
         </Modal.Body>
         <Modal.Footer>

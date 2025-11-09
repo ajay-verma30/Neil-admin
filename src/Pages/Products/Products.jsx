@@ -17,7 +17,7 @@ import { AuthContext } from "../../context/AuthContext";
 import axios from "axios";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { useNavigate } from "react-router-dom";
-import { faPencil, faPlus } from "@fortawesome/free-solid-svg-icons";
+import { faPencil, faPlus, faTrash } from "@fortawesome/free-solid-svg-icons";
 import "./Product.css";
 
 function Products() {
@@ -41,6 +41,7 @@ function Products() {
             headers: { Authorization: `Bearer ${accessToken}` },
           }
         );
+        console.log(res);
 
         setProducts(res.data.products || []);
       } catch (error) {
@@ -82,6 +83,32 @@ function Products() {
       </Card>
     </div>
   );
+
+const deleteProduct = async (id, title) => {
+  if (!window.confirm(`Are you sure you want to delete "${title}"?`)) return;
+
+  try {
+    const res = await fetch(`https://neil-backend-1.onrender.com/products/${id}`, {
+      method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    });
+
+    const data = await res.json();
+
+    if (res.ok) {
+      alert(data.message || "Product deleted successfully!");
+      setProducts(products.filter((p) => p.id !== id)); // remove from UI
+    } else {
+      alert(data.message || "Failed to delete product");
+    }
+  } catch (err) {
+    console.error("❌ Error deleting product:", err);
+    alert("An error occurred while deleting the product.");
+  }
+};
+
 
   return (
     <>
@@ -146,6 +173,7 @@ function Products() {
                     <th>#</th>
                     <th>Title</th>
                     <th>Category</th>
+                    <th>Sub Category</th>
                     <th>Price</th>
                     <th>Variants</th>
                     <th>Created</th>
@@ -159,14 +187,17 @@ function Products() {
                       <td>
                         <div className="fw-semibold">{p.title}</div>
                         <div className="text-muted small">{p.sku}</div>
-                        {p.sub_cat && (
+                        {/* {p.sub_cat && (
                           <Badge bg="secondary" className="mt-1">
                             {p.sub_cat}
                           </Badge>
-                        )}
+                        )} */}
                       </td>
                       <td>
                         <span>{p.category}</span>
+                      </td>
+                      <td>
+                        <span>{p.sub_category}</span>
                       </td>
                       <td>
                         <strong>${parseFloat(p.price).toFixed(2)}</strong>
@@ -241,6 +272,14 @@ function Products() {
                             color: "#0d6efd",
                           }}
                           onClick={() => specProducts(p.id)}
+                        />
+                        <FontAwesomeIcon
+                          icon={faTrash}
+                          style={{
+                            cursor: "pointer",
+                            color: "#fd450dff",
+                          }}
+                          onClick={() => deleteProduct(p.id, p.title)}
                         />
                       </td>
                     </tr>

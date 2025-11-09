@@ -14,7 +14,8 @@ import {
   faBoxOpen,
   faList,
   faFolderTree,
-  faTruckFast,  
+  faTruckFast,
+  faLayerGroup,  
 } from "@fortawesome/free-solid-svg-icons";
 import { Link, useLocation } from "react-router-dom";
 import "./SideBar.css";
@@ -56,6 +57,7 @@ const Sidebar = () => {
       icon: faCubes,
       children: [
         { title: "Products", icon: faBox, path: `/admin/products` },
+        { title: "Categories", icon: faLayerGroup, path: `/admin/categories` },
         { title: "Sub-Categories", icon: faFolderTree, path: `/admin/sub-categories` },
         { title: "Logos", icon: faHelicopterSymbol, path: `/admin/logos` },
       ],
@@ -87,6 +89,7 @@ menuItems = [
       children: [
         { title: "Organization Details", icon: faList, path: `/${effectiveOrgId}/organization_details`},
         { title: "Our Products", icon: faBoxOpen, path: `/${effectiveOrgId}/products`},
+        { title: "Categories", icon: faLayerGroup, path: `/${effectiveOrgId}/categories`},
         { title: "Sub-Categories", icon: faFolderTree, path: `/${effectiveOrgId}/sub-categories` },
         { title: "Logos", icon: faHelicopterSymbol, path: `/${effectiveOrgId}/logos`},
       ],

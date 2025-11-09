@@ -5,16 +5,12 @@ import { Row, Col, Container, Form, Button, Alert, Spinner } from "react-bootstr
 import axios from "axios";
 import { AuthContext } from "../../context/AuthContext";
 import { useNavigate, useParams } from "react-router-dom";
-
-
 const IMAGE_TYPES = ["front", "back", "left", "right"];
-
-// Define the structure for a single size/price/stock attribute
 const initialSizeAttribute = {
-    name: "",             // e.g., "Small", "32"
-    adjustment: 0.00,     // The price difference (e.g., 5.00 for XL)
-    stock: 0,             // Inventory count
-    id: Date.now(),       // A temporary ID for React keys and management
+    name: "",             
+    adjustment: 0.00,     
+    stock: 0,             
+    id: Date.now(),       
 };
 
 function CreateProducts() {
@@ -27,27 +23,28 @@ function CreateProducts() {
     const [subCategories, setSubCategories] = useState([]);
     const [selectedCategory, setSelectedCategory] = useState("");
     const [selectedSubCategory, setSelectedSubCategory] = useState("");
+    const [categories, setCategories] = useState([]);
     const [formData, setFormData] = useState({
         sku: "",
         title: "",
         description: "",
-        price: "", // Base Price
+        price: "", 
         actual_price:"",
         productImages: null,
     });
-
-    // The variant now only handles color, SKU, and nested attributes
     const initialVariant = {
         color: "",
         sku: "",
         images: { front: null, back: null, left: null, right: null },
-        attributes: [{ ...initialSizeAttribute }], // Nested array for sizes/prices/stock
+        attributes: [{ ...initialSizeAttribute }],
     };
 
     const [variants, setVariants] = useState([initialVariant]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
     const [success, setSuccess] = useState("");
+    const [organizations, setOrganizations] = useState([]);
+const [selectedOrg, setSelectedOrg] = useState(org_id || "")
 
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -64,6 +61,28 @@ function CreateProducts() {
         if (error === "Maximum 5 product images allowed") setError("");
     };
 
+const fetchSubCategories = async (categoryId) => {
+    if (!categoryId) {
+        setSubCategories([]);
+        setSelectedSubCategory("");
+        return;
+    }
+    try {
+        const res = await axios.get(
+            "https://neil-backend-1.onrender.com/sub-categories/all",
+            {
+                headers: { Authorization: `Bearer ${accessToken}` },
+                params: { category_id: categoryId, org_id: selectedOrg || org_id }
+            }
+        );
+        setSubCategories(res.data.subCategories || []);
+        setSelectedSubCategory("");
+    } catch (err) {
+        setSubCategories([]);
+    }
+};
+
+
     useEffect(() => {
         if (!accessToken) return;
         const fetchGroups = async () => {
@@ -77,11 +96,51 @@ function CreateProducts() {
                     res.data.groups.map((g) => ({ group_id: g.id, is_visible: false }))
                 );
             } catch (err) {
-                // Handle error fetching groups
             }
         };
         fetchGroups();
     }, [accessToken, org_id]);
+
+    useEffect(() => {
+    if (!accessToken) return;
+
+    const fetchCategories = async () => {
+        try {
+            const res = await axios.get("https://neil-backend-1.onrender.com/categories/all", {
+                headers: { Authorization: `Bearer ${accessToken}` },
+                params: user.role === "Super Admin" ? {} : { org_id } 
+            });
+            if (res.data.success) {
+                setCategories(res.data.categories);
+            }
+        } catch (err) {
+            console.error("Error fetching categories:", err);
+        }
+    };
+
+    fetchCategories();
+}, [accessToken, org_id, user.role]);
+
+ useEffect(() => {
+    if (user.role !== "Super Admin" || !accessToken) return;
+
+    const fetchOrganizations = async () => {
+        try {
+            const res = await axios.get("https://neil-backend-1.onrender.com/organization/all-organizations", {
+                headers: { Authorization: `Bearer ${accessToken}` },
+            });
+
+            if (res.data.success && res.data.organizations) {
+                setOrganizations(res.data.organizations);
+            }
+        } catch (err) {
+            console.error("Error fetching organizations:", err);
+        }
+    };
+
+    fetchOrganizations();
+}, [accessToken, user.role]);
+
 
     const toggleGroupVisibility = (groupId) => {
         setGroupVisibility((prev) =>
@@ -90,10 +149,6 @@ function CreateProducts() {
             )
         );
     };
-
-    // --- NEW/UPDATED HANDLERS ---
-
-    // Handles changes to the main variant fields (color, sku)
     const handleVariantChange = (index, e) => {
         const updated = [...variants];
         updated[index][e.target.name] = e.target.value;
@@ -105,18 +160,14 @@ function CreateProducts() {
         updated[index].images[type] = e.target.files;
         setVariants(updated);
     };
-    
-    // Handles changes to size, adjustment, or stock for a specific attribute
     const handleAttributeChange = (variantIndex, attrId, e) => {
         const updatedVariants = [...variants];
         const variant = updatedVariants[variantIndex];
         
-        // Find the specific size attribute object by its temporary ID
         const attrIndex = variant.attributes.findIndex(attr => attr.id === attrId);
         
         if (attrIndex !== -1) {
             let value = e.target.value;
-            // Ensure numeric fields are stored as numbers
             if (e.target.name === 'adjustment') {
                 value = parseFloat(value) || 0.00;
             } else if (e.target.name === 'stock') {
@@ -127,37 +178,34 @@ function CreateProducts() {
         }
     };
 
-    // Adds a new size attribute row to a specific variant
     const addAttribute = (variantIndex) => {
         const updatedVariants = [...variants];
         updatedVariants[variantIndex].attributes.push({ 
             ...initialSizeAttribute, 
-            // Use a unique ID for the new row key
             id: Date.now() + Math.random() 
         });
         setVariants(updatedVariants);
     };
 
-    // Removes a size attribute row from a specific variant
+    
+
     const removeAttribute = (variantIndex, attrId) => {
         const updatedVariants = [...variants];
         const variant = updatedVariants[variantIndex];
         
-        // Prevent removing the last attribute
         if (variant.attributes.length > 1) {
             variant.attributes = variant.attributes.filter(attr => attr.id !== attrId);
             setVariants(updatedVariants);
         }
     };
 
-    // --- END NEW/UPDATED HANDLERS ---
 
     const addVariant = () => {
         setVariants([
             ...variants,
             { 
                 ...initialVariant, 
-                attributes: [{ ...initialSizeAttribute }], // Ensure new variant starts with one size attribute
+                attributes: [{ ...initialSizeAttribute }], 
                 images: { front: null, back: null, left: null, right: null } 
             },
         ]);
@@ -165,24 +213,6 @@ function CreateProducts() {
 
     const removeVariant = (index) => {
         if (variants.length > 1) setVariants(variants.filter((_, i) => i !== index));
-    };
-
-    const fetchSubCategories = async (category) => {
-        if (!category) {
-            setSubCategories([]);
-            setSelectedSubCategory("");
-            return;
-        }
-        try {
-            const res = await axios.get("https://neil-backend-1.onrender.com/sub-categories/all", {
-                headers: { Authorization: `Bearer ${accessToken}` },
-                params: { category, org_id },
-            });
-            setSubCategories(res.data.subCategories || []);
-            setSelectedSubCategory("");
-        } catch (err) {
-            setSubCategories([]);
-        }
     };
 
     const resetForm = () => {
@@ -205,7 +235,6 @@ function CreateProducts() {
         if (variants.some((v) => !v.sku))
             return setError("All variants must have a SKU.");
 
-        // New validation: check if all variants have at least one size name filled out
         if (variants.some(v => v.attributes.some(a => !a.name))) {
             return setError("All size attributes must have a name (e.g., S, M, L).");
         }
@@ -219,17 +248,20 @@ function CreateProducts() {
             data.append("title", formData.title);
             data.append("description", formData.description);
             data.append("sku", formData.sku);
-            data.append("category", selectedCategory);
-            if (selectedSubCategory) data.append("sub_cat", selectedSubCategory);
+            data.append("category_id", selectedCategory);
+if (selectedSubCategory) data.append("sub_category_id", selectedSubCategory);
+if (user.role === "Super Admin") {
+    if (!selectedOrg) return setError("Please select an organization.");
+    data.append("org_id", selectedOrg);
+} else {
+    data.append("org_id", org_id);
+}
             data.append("price", formData.price);
-            if (org_id) data.append("org_id", org_id);
+            if (formData.actual_price) data.append("actual_price", formData.actual_price);
             data.append("group_visibility", JSON.stringify(groupVisibility));
-
-            // Product Images
             if (formData.productImages)
                 Array.from(formData.productImages).forEach((file) => data.append("productImages", file));
 
-            // Variants + Images
             variants.forEach((v, index) => {
                 IMAGE_TYPES.forEach((type) => {
                     const files = v.images[type];
@@ -240,11 +272,9 @@ function CreateProducts() {
                 });
             });
 
-            // Prepare the payload for the backend
             const variantsPayload = variants.map((v) => ({
                 color: v.color,
                 sku: v.sku,
-                // Map the frontend 'attributes' array to the backend's expected 'sizes' array
                 sizes: v.attributes.map(attr => ({ 
                     name: attr.name, 
                     adjustment: attr.adjustment, 
@@ -312,44 +342,74 @@ function CreateProducts() {
 
                                 <Col xs={12} md={3}>
                                     <Form.Group className="mb-3">
-                                        <Form.Label>Category</Form.Label>
-                                        <Form.Select
-                                            value={selectedCategory}
-                                            onChange={(e) => { setSelectedCategory(e.target.value); fetchSubCategories(e.target.value); }}
-                                            required
-                                        >
-                                            <option value="">Select a category</option>
-                                            {["Tshirts", "Mugs", "Pens", "Bottles", "Books", "Hoodies"].map((cat) => (
-                                                <option key={cat} value={cat}>{cat}</option>
-                                            ))}
-                                        </Form.Select>
-                                    </Form.Group>
+    <Form.Label>Category</Form.Label>
+    <Form.Select
+        value={selectedCategory}
+        onChange={(e) => {
+            setSelectedCategory(e.target.value);
+            fetchSubCategories(e.target.value);
+        }}
+        required
+    >
+        <option value="">Select a category</option>
+        {categories.map((cat) => (
+            <option key={cat.id} value={cat.id}>
+                {cat.title}
+            </option>
+        ))}
+    </Form.Select>
+</Form.Group>
+
                                 </Col>
 
                                 <Col xs={12} md={3}>
                                     <Form.Group className="mb-3">
-                                        <Form.Label>Sub-Category (Optional)</Form.Label>
-                                        <Form.Select
-                                            value={selectedSubCategory}
-                                            onChange={(e) => setSelectedSubCategory(e.target.value)}
-                                            disabled={!selectedCategory || subCategories.length === 0}
-                                        >
-                                            <option value="">Select Sub-Category</option>
-                                            {subCategories.map((sub) => (
-                                                <option key={sub.id} value={sub.title}>{sub.title}</option>
-                                            ))}
-                                        </Form.Select>
-                                        {!subCategories.length && selectedCategory && (
-                                            <Button
-                                                variant="outline-secondary"
-                                                size="sm"
-                                                className="mt-2"
-                                                onClick={handleSubCategories}
-                                            >
-                                                + Add Sub-Category
-                                            </Button>
-                                        )}
-                                    </Form.Group>
+    <Form.Label>Sub-Category (Optional)</Form.Label>
+    <Form.Select
+        value={selectedSubCategory}
+        onChange={(e) => setSelectedSubCategory(e.target.value)}
+        disabled={!selectedCategory || subCategories.length === 0}
+    >
+        <option value="">Select Sub-Category</option>
+        {subCategories.map((sub) => (
+            <option key={sub.id} value={sub.id}>
+                {sub.title}
+            </option>
+        ))}
+    </Form.Select>
+    {!subCategories.length && selectedCategory && (
+        <Button
+            variant="outline-secondary"
+            size="sm"
+            className="mt-2"
+            onClick={handleSubCategories}
+        >
+            + Add Sub-Category
+        </Button>
+    )}
+</Form.Group>
+
+                                </Col>
+                            </Row>
+
+                            <Row>
+                                <Col xs={4} md={4}>
+                                {user.role === "Super Admin" && (
+    <Form.Group className="mb-3">
+        <Form.Label>Organization</Form.Label>
+        <Form.Select
+            value={selectedOrg}
+            onChange={(e) => setSelectedOrg(e.target.value)}
+            required
+        >
+            <option value="">Select Organization</option>
+            {organizations.map((org) => (
+                <option key={org.id} value={org.id}>{org.title}</option>
+            ))}
+        </Form.Select>
+    </Form.Group>
+)}
+
                                 </Col>
                             </Row>
 

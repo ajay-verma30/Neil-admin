@@ -143,36 +143,46 @@ function UserProduct() {
   };
 
   const handleAddToCart = async () => {
-    setMessage("");
-    setIsProcessing(true);
-    const totalQuantity = Object.values(quantities).reduce((a, b) => a + b, 0);
-    if (totalQuantity === 0) {
-      setMessage("⚠️ Please enter a quantity before adding to cart.");
-      setIsProcessing(false);
-      return;
+    setMessage("");
+    setIsProcessing(true);
+    const totalQuantity = Object.values(quantities).reduce((a, b) => a + b, 0);
+    
+    if (totalQuantity === 0) {
+      setMessage("⚠️ Please enter a quantity before adding to cart.");
+      setIsProcessing(false);
+      return;
+    }
+    const hasQuantities = Object.values(quantities).some(qty => qty > 0);
+    if (!hasQuantities) {
+      setMessage("⚠️ Please enter a quantity before adding to cart.");
+      setIsProcessing(false);
+      return;
+    }
+    
+    // 💡 FIX: Check if a placement is selected before proceeding
+    if (!selectedPlacementIds || selectedPlacementIds.length === 0) {
+        setMessage("⚠️ Please select at least one logo placement before adding to cart.");
+        setIsProcessing(false);
+        return;
     }
-    const hasQuantities = Object.values(quantities).some(qty => qty > 0);
-    if (!hasQuantities) {
-      setMessage("⚠️ Please enter a quantity before adding to cart.");
-      setIsProcessing(false);
-      return;
-    }
-    try {
-      const previewEl = document.getElementById("product-preview-area");
-      if (!previewEl) throw new Error("Preview element not found.");
-      const canvas = await html2canvas(previewEl, {
-        backgroundColor: null,
-        scale: 2,
-        useCORS: true,
-      });
-      const blob = await new Promise(resolve => canvas.toBlob(resolve, "image/png"));
-      const file = new File([blob], "custom_preview.png", { type: "image/png" });
-      const formData = new FormData();
-      formData.append("user_id", user?.id || "temporary_user");
-      formData.append("product_variant_id", selectedVariantId);
-      formData.append("logo_variant_id", selectedLogoVariantId);
-      formData.append("placement_id", selectedPlacementIds[0]);
-      formData.append("preview", file);
+    
+    try {
+      const previewEl = document.getElementById("product-preview-area");
+      if (!previewEl) throw new Error("Preview element not found.");
+      const canvas = await html2canvas(previewEl, {
+        backgroundColor: null,
+        scale: 2,
+        useCORS: true,
+      });
+      const blob = await new Promise(resolve => canvas.toBlob(resolve, "image/png"));
+      const file = new File([blob], "custom_preview.png", { type: "image/png" });
+      
+      const formData = new FormData();
+      formData.append("user_id", user?.id || "temporary_user");
+      formData.append("product_variant_id", selectedVariantId);
+      formData.append("logo_variant_id", selectedLogoVariantId);
+      formData.append("placement_id", selectedPlacementIds[0]);
+      formData.append("preview", file);
       const res = await axios.post("https://neil-backend-1.onrender.com/customization/new", formData, {
         headers: {
           Authorization: `Bearer ${accessToken}`,
