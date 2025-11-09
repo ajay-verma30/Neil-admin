@@ -4,7 +4,7 @@ import { AuthContext } from "../context/AuthContext";
 
 export default function Sidebar() {
   const [categories, setCategories] = useState([]);
-    const {user, accessToken} = useContext(AuthContext);
+    const { accessToken} = useContext(AuthContext);
 
   useEffect(() => {
     const fetchData = async () => {

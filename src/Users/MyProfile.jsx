@@ -12,7 +12,7 @@ import {
   Form,
 } from "react-bootstrap";
 import TopBar from "../Components/TopBar/TopBar";
-import Sidebar from "../Components/SideBar/SideBar";
+import Sidebar from "./SideBar";
 import { AuthContext } from "../context/AuthContext";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faTrash } from "@fortawesome/free-solid-svg-icons";
@@ -252,7 +252,10 @@ function MyProfile() {
     <div>
       <TopBar />
       <Row className="g-0">
-        <Col xs={12} className="p-4 bg-light">
+        <Col xs={2} md={2}>
+          <Sidebar/>
+        </Col>
+        <Col xs={10} className="p-4 bg-light">
           <Container>
             <div className="content-container form-box">
               <h2 className="mb-4 text-dark">👤 My Profile</h2>
