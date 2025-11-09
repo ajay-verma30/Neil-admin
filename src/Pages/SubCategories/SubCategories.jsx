@@ -12,7 +12,7 @@ import {
   Card,
 } from "react-bootstrap";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faPlus, faTrash } from "@fortawesome/free-solid-svg-icons";
+import { faPlus, faTrash, faSearch } from "@fortawesome/free-solid-svg-icons";
 import TopBar from "../../Components/TopBar/TopBar";
 import Sidebar from "../../Components/SideBar/SideBar";
 import { AuthContext } from "../../context/AuthContext";
@@ -42,6 +42,13 @@ function SubCategories() {
     org_id: "",
   });
 
+  // Filters
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterOrg, setFilterOrg] = useState("");
+  const [filterCategory, setFilterCategory] = useState("");
+  const [filterDateFrom, setFilterDateFrom] = useState("");
+  const [filterDateTo, setFilterDateTo] = useState("");
+
   // Fetch all sub-categories
   const getAllSubCategories = async () => {
     setLoading(true);
@@ -63,7 +70,7 @@ function SubCategories() {
     }
   };
 
-  // Fetch categories for dropdown
+  // Fetch categories
   const getCategories = async () => {
     try {
       const res = await axios.get(
@@ -76,7 +83,7 @@ function SubCategories() {
     }
   };
 
-  // Fetch organizations (for Super Admin)
+  // Fetch organizations (Super Admin only)
   const getOrganizations = async () => {
     if (user.role !== "Super Admin") return;
     try {
@@ -98,7 +105,7 @@ function SubCategories() {
     }
   }, [accessToken]);
 
-  // Add new sub-category
+  // Add sub-category
   const addSubCategory = async () => {
     const { title, category_id, org_id } = newSubCategory;
     if (!title.trim() || !category_id) {
@@ -143,6 +150,28 @@ function SubCategories() {
     }
   };
 
+  // Apply filters
+  const filteredSubCategories = subCategories.filter((sub) => {
+    const matchesTitle = sub.title
+      .toLowerCase()
+      .includes(searchTerm.toLowerCase());
+
+    const matchesOrg =
+      !filterOrg || sub.org_id?.toString() === filterOrg.toString();
+
+    const matchesCategory =
+      !filterCategory ||
+      sub.category_id?.toString() === filterCategory.toString();
+
+    const createdAt = new Date(sub.created_at);
+    const from = filterDateFrom ? new Date(filterDateFrom) : null;
+    const to = filterDateTo ? new Date(filterDateTo) : null;
+    const matchesDate =
+      (!from || createdAt >= from) && (!to || createdAt <= to);
+
+    return matchesTitle && matchesOrg && matchesCategory && matchesDate;
+  });
+
   return (
     <>
       <TopBar />
@@ -151,16 +180,16 @@ function SubCategories() {
           <Sidebar />
         </Col>
         <Col xs={10} md={10}>
-          <div className="form-box">
-            <Card className="groups-card shadow-sm border-0">
+          <div className="form-box p-3">
+            <Card className="shadow-sm border-0">
               <Card.Body>
-                <div className="d-flex align-items-center justify-content-between mb-4">
+                <div className="d-flex justify-content-between align-items-center mb-4">
                   <div>
                     <h4 className="fw-semibold mb-0 text-dark">
                       Sub-Categories Management
                     </h4>
                     <small className="text-muted">
-                      View, create, and manage sub-categories.
+                      View, filter, and manage sub-categories.
                     </small>
                   </div>
                   <Button
@@ -173,72 +202,120 @@ function SubCategories() {
                   </Button>
                 </div>
 
-                {loading && (
+                {/* Filters Section */}
+                <Row className="g-2 mb-3">
+                  <Col md={3}>
+                    <Form.Control
+                      type="text"
+                      placeholder="Search by title..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                  </Col>
+
+                  <Col md={3}>
+                    <Form.Select
+                      value={filterCategory}
+                      onChange={(e) => setFilterCategory(e.target.value)}
+                    >
+                      <option value="">Filter by Category</option>
+                      {categories.map((cat) => (
+                        <option key={cat.id} value={cat.id}>
+                          {cat.title}
+                        </option>
+                      ))}
+                    </Form.Select>
+                  </Col>
+
+                  {user.role === "Super Admin" && (
+                    <Col md={3}>
+                      <Form.Select
+                        value={filterOrg}
+                        onChange={(e) => setFilterOrg(e.target.value)}
+                      >
+                        <option value="">Filter by Organization</option>
+                        {organizations.map((org) => (
+                          <option key={org.id} value={org.id}>
+                            {org.title}
+                          </option>
+                        ))}
+                      </Form.Select>
+                    </Col>
+                  )}
+
+                  <Col md={3}>
+                    <div className="d-flex gap-2">
+                      <Form.Control
+                        type="date"
+                        value={filterDateFrom}
+                        onChange={(e) => setFilterDateFrom(e.target.value)}
+                      />
+                      <Form.Control
+                        type="date"
+                        value={filterDateTo}
+                        onChange={(e) => setFilterDateTo(e.target.value)}
+                      />
+                    </div>
+                  </Col>
+                </Row>
+
+                {loading ? (
                   <OverlayCard>
                     <Spinner animation="border" variant="primary" />
-                    <div className="mt-3 text-muted">Loading sub-categories...</div>
+                    <div className="mt-3 text-muted">
+                      Loading sub-categories...
+                    </div>
                   </OverlayCard>
-                )}
-
-                {error && !loading && (
+                ) : error ? (
                   <OverlayCard>
-                    <Alert variant="danger" className="mb-3">
-                      {error}
-                    </Alert>
+                    <Alert variant="danger">{error}</Alert>
                     <Button variant="outline-danger" onClick={getAllSubCategories}>
                       Retry
                     </Button>
                   </OverlayCard>
-                )}
-
-                {!loading && !error && (
-                  <>
-                    {subCategories.length === 0 ? (
-                      <OverlayCard>
-                        <Alert variant="info" className="mb-0">
-                          No sub-categories found. Click “Add Sub-Category” to create
-                          one.
-                        </Alert>
-                      </OverlayCard>
-                    ) : (
-                      <div className="table-responsive mt-3">
-                        <Table hover className="align-middle shadow-sm">
-                          <thead className="table-light">
-                            <tr>
-                              <th>#</th>
-                              <th>Sub-Category Title</th>
-                              <th>Parent Category</th>
-                              {user.role === "Super Admin" && <th>Organization</th>}
-                              <th>Created At</th>
-                              <th className="text-end">Actions</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {subCategories.map((sub, index) => (
-                              <tr key={sub.id}>
-                                <td>{index + 1}</td>
-                                <td className="fw-medium text-dark">{sub.title}</td>
-                                <td>{sub.category_title || "-"}</td>
-                                {user.role === "Super Admin" && (
-                                  <td>{sub.org_title || "-"}</td>
-                                )}
-                                <td>{new Date(sub.created_at).toLocaleString()}</td>
-                                <td className="text-end">
-                                  <Button
-                                    variant="link"
-                                    className="p-0 text-danger"
-                                    onClick={() => deleteSubCategory(sub.id)}
-                                  >
-                                    <FontAwesomeIcon icon={faTrash} />
-                                  </Button>
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </Table>
-                      </div>
-                    )}
-                  </>
+                ) : filteredSubCategories.length === 0 ? (
+                  <OverlayCard>
+                    <Alert variant="info" className="mb-0">
+                      No sub-categories found matching filters.
+                    </Alert>
+                  </OverlayCard>
+                ) : (
+                  <div className="table-responsive mt-3">
+                    <Table hover className="align-middle shadow-sm">
+                      <thead className="table-light">
+                        <tr>
+                          <th>#</th>
+                          <th>Sub-Category Title</th>
+                          <th>Parent Category</th>
+                          {user.role === "Super Admin" && <th>Organization</th>}
+                          <th>Created At</th>
+                          <th className="text-end">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {filteredSubCategories.map((sub, index) => (
+                          <tr key={sub.id}>
+                            <td>{index + 1}</td>
+                            <td className="fw-medium text-dark">{sub.title}</td>
+                            <td>{sub.category_title || "-"}</td>
+                            {user.role === "Super Admin" && (
+                              <td>{sub.org_title || "-"}</td>
+                            )}
+                            <td>{new Date(sub.created_at).toLocaleString()}</td>
+                            <td className="text-end">
+                              <Button
+                                variant="link"
+                                className="p-0 text-danger"
+                                onClick={() => deleteSubCategory(sub.id)}
+                              >
+                                <FontAwesomeIcon icon={faTrash} />
+                              </Button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </Table>
+                  </div>
                 )}
               </Card.Body>
             </Card>
@@ -246,7 +323,7 @@ function SubCategories() {
         </Col>
       </Row>
 
-      {/* Add Sub-Category Modal */}
+      {/* Add Modal */}
       <Modal show={showModal} onHide={() => setShowModal(false)} centered>
         <Modal.Header closeButton>
           <Modal.Title>Add New Sub-Category</Modal.Title>
@@ -270,7 +347,10 @@ function SubCategories() {
               <Form.Select
                 value={newSubCategory.category_id}
                 onChange={(e) =>
-                  setNewSubCategory({ ...newSubCategory, category_id: e.target.value })
+                  setNewSubCategory({
+                    ...newSubCategory,
+                    category_id: e.target.value,
+                  })
                 }
               >
                 <option value="">Select Category</option>
@@ -288,7 +368,10 @@ function SubCategories() {
                 <Form.Select
                   value={newSubCategory.org_id}
                   onChange={(e) =>
-                    setNewSubCategory({ ...newSubCategory, org_id: e.target.value })
+                    setNewSubCategory({
+                      ...newSubCategory,
+                      org_id: e.target.value,
+                    })
                   }
                 >
                   <option value="">Select Organization</option>

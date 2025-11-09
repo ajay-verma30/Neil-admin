@@ -30,7 +30,6 @@ function Products() {
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState(null);
 
-  // Filter states
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
   const [selectedSubCategory, setSelectedSubCategory] = useState("");
@@ -136,7 +135,7 @@ function Products() {
 
       if (res.ok) {
         alert(data.message || "Product deleted successfully!");
-        setProducts(products.filter((p) => p.id !== id)); // remove from UI
+        setProducts(products.filter((p) => p.id !== id));
       } else {
         alert(data.message || "Failed to delete product");
       }
@@ -146,7 +145,6 @@ function Products() {
     }
   };
 
-  // 🔹 Overlay Card for loading/error/empty
   const OverlayCard = ({ children }) => (
     <div
       className="d-flex justify-content-center align-items-center"
