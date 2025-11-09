@@ -213,7 +213,7 @@ function SubCategories() {
                     />
                   </Col>
 
-                  <Col md={3}>
+                  <Col md={2}>
                     <Form.Select
                       value={filterCategory}
                       onChange={(e) => setFilterCategory(e.target.value)}
@@ -228,7 +228,7 @@ function SubCategories() {
                   </Col>
 
                   {user.role === "Super Admin" && (
-                    <Col md={3}>
+                    <Col md={2}>
                       <Form.Select
                         value={filterOrg}
                         onChange={(e) => setFilterOrg(e.target.value)}
