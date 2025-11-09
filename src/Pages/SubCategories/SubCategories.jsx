@@ -203,61 +203,76 @@ function SubCategories() {
                 </div>
 
                 {/* Filters Section */}
-                <Row className="g-2 mb-3">
-                  <Col md={3}>
-                    <Form.Control
-                      type="text"
-                      placeholder="Search by title..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                    />
-                  </Col>
+                <Row className="g-2 mb-3 align-items-end">
+  <Col md={3}>
+    <Form.Control
+      type="text"
+      placeholder="Search by title..."
+      value={searchTerm}
+      onChange={(e) => setSearchTerm(e.target.value)}
+    />
+  </Col>
 
-                  <Col md={2}>
-                    <Form.Select
-                      value={filterCategory}
-                      onChange={(e) => setFilterCategory(e.target.value)}
-                    >
-                      <option value="">Filter by Category</option>
-                      {categories.map((cat) => (
-                        <option key={cat.id} value={cat.id}>
-                          {cat.title}
-                        </option>
-                      ))}
-                    </Form.Select>
-                  </Col>
+  <Col md={2}>
+    <Form.Select
+      value={filterCategory}
+      onChange={(e) => setFilterCategory(e.target.value)}
+    >
+      <option value="">Filter by Category</option>
+      {categories.map((cat) => (
+        <option key={cat.id} value={cat.id}>
+          {cat.title}
+        </option>
+      ))}
+    </Form.Select>
+  </Col>
 
-                  {user.role === "Super Admin" && (
-                    <Col md={2}>
-                      <Form.Select
-                        value={filterOrg}
-                        onChange={(e) => setFilterOrg(e.target.value)}
-                      >
-                        <option value="">Filter by Organization</option>
-                        {organizations.map((org) => (
-                          <option key={org.id} value={org.id}>
-                            {org.title}
-                          </option>
-                        ))}
-                      </Form.Select>
-                    </Col>
-                  )}
+  {user.role === "Super Admin" && (
+    <Col md={2}>
+      <Form.Select
+        value={filterOrg}
+        onChange={(e) => setFilterOrg(e.target.value)}
+      >
+        <option value="">Filter by Organization</option>
+        {organizations.map((org) => (
+          <option key={org.id} value={org.id}>
+            {org.title}
+          </option>
+        ))}
+      </Form.Select>
+    </Col>
+  )}
 
-                  <Col md={3}>
-                    <div className="d-flex gap-2">
-                      <Form.Control
-                        type="date"
-                        value={filterDateFrom}
-                        onChange={(e) => setFilterDateFrom(e.target.value)}
-                      />
-                      <Form.Control
-                        type="date"
-                        value={filterDateTo}
-                        onChange={(e) => setFilterDateTo(e.target.value)}
-                      />
-                    </div>
-                  </Col>
-                </Row>
+  <Col md={3}>
+    <div className="d-flex gap-2">
+      <Form.Control
+        type="date"
+        value={filterDateFrom}
+        onChange={(e) => setFilterDateFrom(e.target.value)}
+      />
+      <Form.Control
+        type="date"
+        value={filterDateTo}
+        onChange={(e) => setFilterDateTo(e.target.value)}
+      />
+    </div>
+  </Col>
+
+  {/* Filter Button */}
+  <Col md={2} className="d-grid">
+    <Button
+      variant="primary"
+      onClick={() => {
+        // Trigger filter re-render or API call if needed
+        getAllSubCategories();
+      }}
+    >
+      <FontAwesomeIcon icon={faSearch} className="me-1" />
+      Filter
+    </Button>
+  </Col>
+</Row>
+
 
                 {loading ? (
                   <OverlayCard>
