@@ -206,7 +206,7 @@ function Categories() {
                     </Col>
                   )}
 
-                  <Col md={3}>
+                  <Col md={2}>
                     <div className="d-flex gap-2">
                       <Form.Control
                         type="date"
@@ -221,7 +221,7 @@ function Categories() {
                     </div>
                   </Col>
 
-                  <Col md={3} className="d-grid">
+                  <Col md={2} className="d-grid">
                     <Button variant="primary" onClick={fetchCategories}>
                       Filter
                     </Button>
