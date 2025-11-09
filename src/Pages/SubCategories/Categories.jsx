@@ -206,7 +206,7 @@ function Categories() {
                     </Col>
                   )}
 
-                  <Col md={2}>
+                  <Col md={4}>
                     <div className="d-flex gap-2">
                       <Form.Control
                         type="date"
