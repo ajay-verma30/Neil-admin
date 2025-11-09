@@ -11,19 +11,29 @@ import {
   Modal,
   Form,
   Card,
-  Container,
 } from "react-bootstrap";
 import axios from "axios";
 import { AuthContext } from "../../context/AuthContext";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faTrash, faPlus } from "@fortawesome/free-solid-svg-icons";
 
+const OverlayCard = ({ children }) => (
+  <div
+    className="d-flex justify-content-center align-items-center"
+    style={{ minHeight: "60vh" }}
+  >
+    <Card className="shadow-sm text-center p-5" style={{ minWidth: "400px" }}>
+      {children}
+    </Card>
+  </div>
+);
+
 function Categories() {
   const { accessToken, user } = useContext(AuthContext);
   const [categories, setCategories] = useState([]);
   const [organizations, setOrganizations] = useState([]);
 
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
@@ -37,7 +47,7 @@ function Categories() {
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
 
-  // 🔹 Fetch Categories with Filters
+  // 🔹 Fetch Categories
   const fetchCategories = async () => {
     if (!accessToken) return;
     setLoading(true);
@@ -56,12 +66,8 @@ function Categories() {
         { headers: { Authorization: `Bearer ${accessToken}` } }
       );
 
-      if (res.data.success) {
-        setCategories(res.data.categories);
-      } else {
-        setCategories([]);
-        setError("No categories found.");
-      }
+      setCategories(res.data.categories || []);
+      if (!res.data.categories.length) setError("No categories found.");
     } catch (err) {
       console.error("❌ Fetch error:", err);
       setError(err.response?.data?.message || "Failed to fetch categories.");
@@ -70,7 +76,7 @@ function Categories() {
     }
   };
 
-  // 🔹 Fetch Organizations (for dropdown)
+  // 🔹 Fetch Organizations
   const fetchOrganizations = async () => {
     if (!accessToken) return;
     try {
@@ -78,11 +84,9 @@ function Categories() {
         "https://neil-backend-1.onrender.com/organization/all-organizations",
         { headers: { Authorization: `Bearer ${accessToken}` } }
       );
-      if (res.data.success) {
-        setOrganizations(res.data.organizations);
-      }
+      setOrganizations(res.data.organizations || []);
     } catch (err) {
-      console.error("❌ Error fetching organizations:", err);
+      console.error(err);
     }
   };
 
@@ -113,12 +117,12 @@ function Categories() {
     }
   };
 
-  // 🔹 Handle Modal Input Change
+  // 🔹 Modal Input Change
   const handleChange = (e) => {
     setNewCategory({ ...newCategory, [e.target.name]: e.target.value });
   };
 
-  // 🔹 Submit New Category
+  // 🔹 Add Category
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!newCategory.title || (!newCategory.org_id && user.role === "Super Admin")) {
@@ -152,188 +156,183 @@ function Categories() {
   return (
     <>
       <TopBar />
-      <Container fluid className="p-0">
-        <Row className="g-0">
-          {/* Sidebar */}
-          <Col xs={12} md={2} className="bg-light min-vh-100 border-end">
-            <Sidebar />
-          </Col>
-
-          {/* Main Content */}
-          <Col xs={12} md={10} className="p-4">
-            <div className="mb-4 d-flex justify-content-between align-items-center border-bottom pb-2 form-box">
-              <h2 className="fw-light text-secondary mb-0">Category Management</h2>
-              <Button
-                variant="primary"
-                className="d-flex align-items-center shadow-sm"
-                onClick={() => setShowModal(true)}
-              >
-                <FontAwesomeIcon icon={faPlus} className="me-2" />
-                Add Category
-              </Button>
-            </div>
-
-            {/* 🔍 Filter Bar */}
-            <Card className="p-3 mb-4 shadow-sm">
-              <Row className="g-3 align-items-end">
-                <Col md={3}>
-                  <Form.Label className="fw-semibold small">Search by Title</Form.Label>
-                  <Form.Control
-                    type="text"
-                    placeholder="Enter category title"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                  />
-                </Col>
-
-                {user.role === "Super Admin" && (
-                  <Col md={3}>
-                    <Form.Label className="fw-semibold small">Organization</Form.Label>
-                    <Form.Select
-                      value={selectedOrg}
-                      onChange={(e) => setSelectedOrg(e.target.value)}
-                    >
-                      <option value="">All Organizations</option>
-                      {organizations.map((org) => (
-                        <option key={org.id} value={org.id}>
-                          {org.title}
-                        </option>
-                      ))}
-                    </Form.Select>
-                  </Col>
-                )}
-
-                <Col md={2}>
-                  <Form.Label className="fw-semibold small">Start Date</Form.Label>
-                  <Form.Control
-                    type="date"
-                    value={startDate}
-                    onChange={(e) => setStartDate(e.target.value)}
-                  />
-                </Col>
-
-                <Col md={2}>
-                  <Form.Label className="fw-semibold small">End Date</Form.Label>
-                  <Form.Control
-                    type="date"
-                    value={endDate}
-                    onChange={(e) => setEndDate(e.target.value)}
-                  />
-                </Col>
-
-                <Col md={2} className="d-grid">
-                  <Button variant="primary" onClick={fetchCategories}>
-                    Filter
+      <Row>
+        <Col xs={2} md={2}>
+          <Sidebar />
+        </Col>
+        <Col xs={10} md={10}>
+          <div className="form-box p-3">
+            <Card className="shadow-sm border-0">
+              <Card.Body>
+                <div className="d-flex justify-content-between align-items-center mb-4">
+                  <div>
+                    <h4 className="fw-semibold mb-0 text-dark">Categories Management</h4>
+                    <small className="text-muted">View, filter, and manage categories.</small>
+                  </div>
+                  <Button
+                    variant="primary"
+                    className="d-flex align-items-center gap-2"
+                    onClick={() => setShowModal(true)}
+                  >
+                    <FontAwesomeIcon icon={faPlus} />
+                    Add Category
                   </Button>
-                </Col>
-              </Row>
-            </Card>
+                </div>
 
-            {/* Alerts */}
-            {error && (
-              <Alert variant="danger" dismissible onClose={() => setError("")}>
-                {error}
-              </Alert>
-            )}
-            {success && (
-              <Alert variant="success" dismissible onClose={() => setSuccess("")}>
-                {success}
-              </Alert>
-            )}
-
-            {/* Table */}
-            {loading ? (
-              <div className="d-flex justify-content-center p-5">
-                <Spinner animation="border" />
-              </div>
-            ) : (
-              <Table striped bordered hover responsive className="shadow-sm">
-                <thead className="table-light">
-                  <tr>
-                    <th>#</th>
-                    <th>Title</th>
-                    <th>Organization</th>
-                    <th>Created At</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {categories.length > 0 ? (
-                    categories.map((cat, index) => (
-                      <tr key={cat.id}>
-                        <td>{index + 1}</td>
-                        <td>{cat.title}</td>
-                        <td>{cat.organization || "-"}</td>
-                        <td>{new Date(cat.created_at).toLocaleString()}</td>
-                        <td className="text-center">
-                          <Button
-                            variant="danger"
-                            size="sm"
-                            onClick={() => handleDelete(cat.id)}
-                          >
-                            <FontAwesomeIcon icon={faTrash} />
-                          </Button>
-                        </td>
-                      </tr>
-                    ))
-                  ) : (
-                    <tr>
-                      <td colSpan="5" className="text-center text-muted">
-                        No categories found.
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </Table>
-            )}
-
-            {/* ➕ Add Category Modal */}
-            <Modal show={showModal} onHide={() => setShowModal(false)} style={{ marginTop: "50px" }}>
-              <Modal.Header closeButton>
-                <Modal.Title>Add New Category</Modal.Title>
-              </Modal.Header>
-              <Modal.Body>
-                <Form onSubmit={handleSubmit}>
-                  <Form.Group className="mb-3">
-                    <Form.Label>Category Title</Form.Label>
+                {/* 🔹 Filters */}
+                <Row className="g-2 mb-3">
+                  <Col md={3}>
                     <Form.Control
                       type="text"
-                      name="title"
-                      value={newCategory.title}
-                      onChange={handleChange}
-                      placeholder="Enter category title"
-                      required
+                      placeholder="Search by title..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
                     />
-                  </Form.Group>
+                  </Col>
 
                   {user.role === "Super Admin" && (
-                    <Form.Group className="mb-3">
-                      <Form.Label>Organization</Form.Label>
+                    <Col md={3}>
                       <Form.Select
-                        name="org_id"
-                        value={newCategory.org_id}
-                        onChange={handleChange}
-                        required
+                        value={selectedOrg}
+                        onChange={(e) => setSelectedOrg(e.target.value)}
                       >
-                        <option value="">Select Organization</option>
+                        <option value="">Filter by Organization</option>
                         {organizations.map((org) => (
                           <option key={org.id} value={org.id}>
                             {org.title}
                           </option>
                         ))}
                       </Form.Select>
-                    </Form.Group>
+                    </Col>
                   )}
 
-                  <Button variant="primary" type="submit" disabled={submitting}>
-                    {submitting ? "Saving..." : "Add Category"}
-                  </Button>
-                </Form>
-              </Modal.Body>
-            </Modal>
-          </Col>
-        </Row>
-      </Container>
+                  <Col md={3}>
+                    <div className="d-flex gap-2">
+                      <Form.Control
+                        type="date"
+                        value={startDate}
+                        onChange={(e) => setStartDate(e.target.value)}
+                      />
+                      <Form.Control
+                        type="date"
+                        value={endDate}
+                        onChange={(e) => setEndDate(e.target.value)}
+                      />
+                    </div>
+                  </Col>
+
+                  <Col md={3} className="d-grid">
+                    <Button variant="primary" onClick={fetchCategories}>
+                      Filter
+                    </Button>
+                  </Col>
+                </Row>
+
+                {/* 🔹 Alerts & Table */}
+                {loading ? (
+                  <OverlayCard>
+                    <Spinner animation="border" variant="primary" />
+                    <div className="mt-3 text-muted">Loading categories...</div>
+                  </OverlayCard>
+                ) : error ? (
+                  <OverlayCard>
+                    <Alert variant="danger">{error}</Alert>
+                    <Button variant="outline-danger" onClick={fetchCategories}>
+                      Retry
+                    </Button>
+                  </OverlayCard>
+                ) : categories.length === 0 ? (
+                  <OverlayCard>
+                    <Alert variant="info" className="mb-0">
+                      No categories found matching filters.
+                    </Alert>
+                  </OverlayCard>
+                ) : (
+                  <div className="table-responsive mt-3">
+                    <Table hover className="align-middle shadow-sm">
+                      <thead className="table-light">
+                        <tr>
+                          <th>#</th>
+                          <th>Title</th>
+                          {user.role === "Super Admin" && <th>Organization</th>}
+                          <th>Created At</th>
+                          <th className="text-end">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {categories.map((cat, index) => (
+                          <tr key={cat.id}>
+                            <td>{index + 1}</td>
+                            <td className="fw-medium text-dark">{cat.title}</td>
+                            {user.role === "Super Admin" && (
+                              <td>{cat.organization || "-"}</td>
+                            )}
+                            <td>{new Date(cat.created_at).toLocaleString()}</td>
+                            <td className="text-end">
+                              <Button
+                                variant="link"
+                                className="p-0 text-danger"
+                                onClick={() => handleDelete(cat.id)}
+                              >
+                                <FontAwesomeIcon icon={faTrash} />
+                              </Button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </Table>
+                  </div>
+                )}
+              </Card.Body>
+            </Card>
+          </div>
+
+          {/* ➕ Add Category Modal */}
+          <Modal show={showModal} onHide={() => setShowModal(false)} centered>
+            <Modal.Header closeButton>
+              <Modal.Title>Add New Category</Modal.Title>
+            </Modal.Header>
+            <Modal.Body>
+              <Form onSubmit={handleSubmit}>
+                <Form.Group className="mb-3">
+                  <Form.Label>Category Title</Form.Label>
+                  <Form.Control
+                    type="text"
+                    name="title"
+                    value={newCategory.title}
+                    onChange={handleChange}
+                    placeholder="Enter category title"
+                    required
+                  />
+                </Form.Group>
+
+                {user.role === "Super Admin" && (
+                  <Form.Group className="mb-3">
+                    <Form.Label>Organization</Form.Label>
+                    <Form.Select
+                      name="org_id"
+                      value={newCategory.org_id}
+                      onChange={handleChange}
+                      required
+                    >
+                      <option value="">Select Organization</option>
+                      {organizations.map((org) => (
+                        <option key={org.id} value={org.id}>
+                          {org.title}
+                        </option>
+                      ))}
+                    </Form.Select>
+                  </Form.Group>
+                )}
+
+                <Button variant="primary" type="submit" disabled={submitting}>
+                  {submitting ? "Saving..." : "Add Category"}
+                </Button>
+              </Form>
+            </Modal.Body>
+          </Modal>
+        </Col>
+      </Row>
     </>
   );
 }
