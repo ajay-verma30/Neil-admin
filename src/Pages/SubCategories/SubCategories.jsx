@@ -259,7 +259,7 @@ function SubCategories() {
   </Col>
 
   {/* Filter Button */}
-  <Col md={2} className="d-grid">
+  <Col md={1} className="d-grid" style={{marginLeft:"45px"}}>
     <Button
       variant="primary"
       onClick={() => {
