@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext } from "react";
+import React, { useState, useEffect, useContext, useMemo } from "react";
 import { Collapse } from "react-bootstrap"; 
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
@@ -30,82 +30,85 @@ const Sidebar = () => {
   
   const effectiveOrgId = org_id || user?.org_id;
 
-  let menuItems = [];
+  const menuItems = useMemo(() => {
+    let items = [];
 
-  if(user?.role === "Super Admin"){
-    menuItems = [
-    {
-      title: "Dashboard",
-      icon: faTachometerAlt,
-      path: `/admin/dashboard`,
-    },
-    {
-        title: "Organizations",
-        icon: faBuildingUser,
-        path: "/admin/organizations",
+    if(user?.role === "Super Admin"){
+      items = [
+      {
+        title: "Dashboard",
+        icon: faTachometerAlt,
+        path: `/admin/dashboard`,
       },
-    {
-      title: "Users & Groups",
-      icon: faUsers,
-      children: [
-        { title: "Users", icon: faUser, path: `/admin/users` },
-        { title: "Groups", icon: faUserFriends, path: `/admin/groups` }
-      ],
-    },
-    {
-      title: "Products & Categories",
-      icon: faCubes,
-      children: [
-        { title: "Products", icon: faBox, path: `/admin/products` },
-        { title: "Categories", icon: faLayerGroup, path: `/admin/categories` },
-        { title: "Sub-Categories", icon: faFolderTree, path: `/admin/sub-categories` },
-        { title: "Logos", icon: faHelicopterSymbol, path: `/admin/logos` },
-      ],
-    },
-    {
-        title: "Orders",
-        icon: faTruckFast,
-        path: "/admin/orders",
+      {
+          title: "Organizations",
+          icon: faBuildingUser,
+          path: "/admin/organizations",
+        },
+      {
+        title: "Users & Groups",
+        icon: faUsers,
+        children: [
+          { title: "Users", icon: faUser, path: `/admin/users` },
+          { title: "Groups", icon: faUserFriends, path: `/admin/groups` }
+        ],
       },
-]
-}else if (user?.role === "Admin" || user?.role === "Manager"){
-menuItems = [
-    {
-      title: "Dashboard",
-      icon: faTachometerAlt,
-      path: `/${effectiveOrgId}/dashboard`,
-    },
-    {
-      title: "Users & Groups",
-      icon: faUsers,
-      children: [
-        { title: "Users", icon: faUser, path: `/${effectiveOrgId}/users` },
-        { title: "Groups", icon: faUserFriends, path: `/${effectiveOrgId}/groups` }
-      ],
-    },
-    {
-      title: "My Organization",
-      icon: faBuildingUser,
-      children: [
-        { title: "Organization Details", icon: faList, path: `/${effectiveOrgId}/organization_details`},
-        { title: "Our Products", icon: faBoxOpen, path: `/${effectiveOrgId}/products`},
-        { title: "Categories", icon: faLayerGroup, path: `/${effectiveOrgId}/categories`},
-        { title: "Sub-Categories", icon: faFolderTree, path: `/${effectiveOrgId}/sub-categories` },
-        { title: "Logos", icon: faHelicopterSymbol, path: `/${effectiveOrgId}/logos`},
-      ],
-    },{
-        title: "Orders",
-        icon: faTruckFast,
-        path: `/${effectiveOrgId}/org_orders`,
-      }
-  ]
-}else{
-  menuItems = [
-      { title: "Dashboard", icon: faTachometerAlt, path: `/${effectiveOrgId}` },
-      { title: "Products", icon: faBox, path: `/${effectiveOrgId}/products` },
-      { title: "Orders", icon: faBoxOpen, path: `/${effectiveOrgId}/orders` },
+      {
+        title: "Products & Categories",
+        icon: faCubes,
+        children: [
+          { title: "Products", icon: faBox, path: `/admin/products` },
+          { title: "Categories", icon: faLayerGroup, path: `/admin/categories` },
+          { title: "Sub-Categories", icon: faFolderTree, path: `/admin/sub-categories` },
+          { title: "Logos", icon: faHelicopterSymbol, path: `/admin/logos` },
+        ],
+      },
+      {
+          title: "Orders",
+          icon: faTruckFast,
+          path: "/admin/orders",
+        },
     ]
-}
+    }else if (user?.role === "Admin" || user?.role === "Manager"){
+      items = [
+      {
+        title: "Dashboard",
+        icon: faTachometerAlt,
+        path: `/${effectiveOrgId}/dashboard`,
+      },
+      {
+        title: "Users & Groups",
+        icon: faUsers,
+        children: [
+          { title: "Users", icon: faUser, path: `/${effectiveOrgId}/users` },
+          { title: "Groups", icon: faUserFriends, path: `/${effectiveOrgId}/groups` }
+        ],
+      },
+      {
+        title: "My Organization",
+        icon: faBuildingUser,
+        children: [
+          { title: "Organization Details", icon: faList, path: `/${effectiveOrgId}/organization_details`},
+          { title: "Our Products", icon: faBoxOpen, path: `/${effectiveOrgId}/products`},
+          { title: "Categories", icon: faLayerGroup, path: `/${effectiveOrgId}/categories`},
+          { title: "Sub-Categories", icon: faFolderTree, path: `/${effectiveOrgId}/sub-categories` },
+          { title: "Logos", icon: faHelicopterSymbol, path: `/${effectiveOrgId}/logos`},
+        ],
+      },{
+          title: "Orders",
+          icon: faTruckFast,
+          path: `/${effectiveOrgId}/org_orders`,
+        }
+    ]
+    }else{
+      items = [
+          { title: "Dashboard", icon: faTachometerAlt, path: `/${effectiveOrgId}` },
+          { title: "Products", icon: faBox, path: `/${effectiveOrgId}/products` },
+          { title: "Orders", icon: faBoxOpen, path: `/${effectiveOrgId}/orders` },
+        ]
+    }
+    return items;
+  }, [user?.role, effectiveOrgId]);
   const isActive = (path) => location.pathname === path;
 
   const findOpenGroupIndex = (pathname) => {
@@ -124,10 +127,10 @@ menuItems = [
 
   useEffect(() => {
     const parentIndex = findOpenGroupIndex(location.pathname);
-    if (parentIndex !== null && openGroup !== parentIndex) {
+    if (parentIndex !== null) {
       setOpenGroup(parentIndex);
     }
-  }, [location.pathname, openGroup]);
+  }, [location.pathname]);
 
   const handleMenuClick = (index) => {
     setOpenGroup(openGroup === index ? null : index);

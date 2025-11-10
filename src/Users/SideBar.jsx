@@ -3,6 +3,7 @@ import axios from "axios";
 import { AuthContext } from "../context/AuthContext";
 
 export default function Sidebar() {
+
   const [categories, setCategories] = useState([]);
   const { accessToken, user } = useContext(AuthContext);
 
@@ -32,10 +33,10 @@ export default function Sidebar() {
       }
     };
 
-    if (accessToken && orgId) {
+    if (accessToken && user) {
       fetchCategories();
     }
-  }, [accessToken, orgId]);
+  }, [accessToken, user]);
 
   return (
     <aside className="w-64 bg-white shadow-md p-4 overflow-y-auto h-screen">

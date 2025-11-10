@@ -35,18 +35,15 @@ const clientCleanup = () => {
 };
 
 axios.defaults.withCredentials = true;
-// NOTE: Ensure your backend's CORS settings also allow credentials and your frontend's origin
 axios.defaults.baseURL = "https://neil-backend-1.onrender.com";
 
 
   // Refresh token
   const refreshAccessToken = async () => {
     try {
-      // 🟢 CHANGE 1: Use relative URL, relying on axios.defaults.baseURL
       const res = await axios.post(
-        "/users/refresh", // Changed from full URL
+        "/users/refresh",
         {},
-        // Note: withCredentials is already a default, but explicit is fine here
         { withCredentials: true } 
       );
       const token = res.data.accessToken;
@@ -64,12 +61,12 @@ axios.defaults.baseURL = "https://neil-backend-1.onrender.com";
   // Logout
   const logout = async () => {
     try {
-      // 🟢 CHANGE 2: Use relative URL, relying on axios.defaults.baseURL
       await axios.post("/users/logout", {}, { withCredentials: true });
     } catch (err) {
       console.error("Logout error (server cleanup failed):", err);
     }
     clientCleanup();
+  window.location.href = "/";
   };
 
   // Initialize from localStorage
@@ -90,7 +87,6 @@ axios.defaults.baseURL = "https://neil-backend-1.onrender.com";
 
     init();
 
-    // Axios interceptors
     const requestInterceptor = axios.interceptors.request.use(
       (config) => {
         const token = accessTokenRef.current;
@@ -119,7 +115,8 @@ axios.defaults.baseURL = "https://neil-backend-1.onrender.com";
             originalRequest.headers["Authorization"] = `Bearer ${newToken}`;
             return axios(originalRequest);
           } catch (refreshError) {
-            // Logout if refresh fails
+            clientCleanup();
+            window.location.href = "/"; 
             return Promise.reject(refreshError);
           }
         }
@@ -137,9 +134,8 @@ axios.defaults.baseURL = "https://neil-backend-1.onrender.com";
   // Login
   const login = async (email, password) => {
   try {
-    // 🟢 CHANGE 3: Use relative URL, relying on axios.defaults.baseURL
     const res = await axios.post(
-      "/users/login", // Changed from full URL
+      "/users/login",
       { email, password },
       { withCredentials: true }
     );
@@ -150,8 +146,6 @@ axios.defaults.baseURL = "https://neil-backend-1.onrender.com";
       localStorage.setItem("accessToken", token);
       setAccessToken(token);
       setUser(decodedUser);
-
-      // Ensure mode cleanup happens on successful login
       setMode(null);
       localStorage.removeItem("mode");
 

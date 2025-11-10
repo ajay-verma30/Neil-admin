@@ -3,7 +3,6 @@ import TopBar from '../Components/TopBar/TopBar'
 import './Common.css'
 import ProductList from './ProductList'
 import { Row,Col } from 'react-bootstrap'
-import Sidebar from './SideBar'
 
 function UserProducts() {
   return (
@@ -12,10 +11,7 @@ function UserProducts() {
       <div className="hero">
       </div>
       <Row>
-        <Col xs={2}>
-        <Sidebar/>
-        </Col>
-        <Col xs={10}>
+        <Col xs={12}>
           <ProductList/>
         </Col>
       </Row>
