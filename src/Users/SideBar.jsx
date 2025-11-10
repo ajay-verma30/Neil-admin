@@ -4,9 +4,10 @@ import { AuthContext } from "../context/AuthContext";
 
 export default function Sidebar() {
   const [categories, setCategories] = useState([]);
-  const { accessToken, orgId } = useContext(AuthContext); // assuming orgId is stored in context
+  const { accessToken, user } = useContext(AuthContext);
 
   useEffect(() => {
+    const orgId = user.org_id;
     const fetchCategories = async () => {
       try {
         const res = await axios.post(
