@@ -11,9 +11,7 @@ import {
   Modal,
   Form,
 } from "react-bootstrap";
-import TopBar from "../Components/TopBar/TopBar";
-import Sidebar from "./SideBar";
-import { AuthContext } from "../context/AuthContext";
+import { AuthContext } from "../../context/AuthContext";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faTrash } from "@fortawesome/free-solid-svg-icons";
 import axios from "axios";
@@ -23,7 +21,8 @@ import {
   TelephoneFill,
   CalendarDate,
 } from "react-bootstrap-icons";
-import Footer from "./Footer";
+import Sidebar from "../../Components/SideBar/SideBar";
+import TopBar from "../../Components/TopBar/TopBar";
 
 // Define the consistent base URL for all API calls
 const BASE_API_URL = "https://neil-backend-1.onrender.com";
@@ -290,10 +289,10 @@ function MyProfile() {
 
   return (
     <div>
-      <TopBar />
+      <TopBar/>
       <Row className="g-0">
         <Col xs={2} md={2}>
-          <Sidebar />
+          <Sidebar/>
         </Col>
         <Col xs={10} className="p-4 bg-light">
           <Container>
@@ -717,7 +716,6 @@ function MyProfile() {
         </Modal.Body>
       </Modal>
 
-      <Footer />
     </div>
   );
 }

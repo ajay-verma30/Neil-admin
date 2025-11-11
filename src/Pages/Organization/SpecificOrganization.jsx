@@ -59,24 +59,25 @@ function SpecificOrganization() {
 }, [effectiveId, accessToken]);
 
 
-  const handleMarkInactive = async (orgId) => {
-    if (!window.confirm("Are you sure you want to mark this organization as inactive?")) return;
+const handleMarkInactive = async (orgId) => {
+  if (!window.confirm("Are you sure you want to toggle this organization's status?")) return;
 
-    try {
-      setUpdatingStatus(true);
-      const res = await axios.patch(
-        `https://neil-backend-1.onrender.com/organization/${orgId}/status`,
-        { status: false },
-        { headers: { Authorization: `Bearer ${accessToken}` } }
-      );
-      // Update local state
-      setOrg((prev) => ({ ...prev, status: res.data.status }));
-    } catch (err) {
-      alert(err.response?.data?.message || "Failed to update status");
-    } finally {
-      setUpdatingStatus(false);
-    }
-  };
+  try {
+    setUpdatingStatus(true);
+    const res = await axios.patch(
+      `https://neil-backend-1.onrender.com/organization/${orgId}/status`,
+      { status: !org.status }, // toggle
+      { headers: { Authorization: `Bearer ${accessToken}` } }
+    );
+
+    // Update local state
+    setOrg((prev) => ({ ...prev, status: res.data.status }));
+  } catch (err) {
+    alert(err.response?.data?.message || "Failed to update status");
+  } finally {
+    setUpdatingStatus(false);
+  }
+};
 
   const handleDeleteOrganization = async (orgId) => {
   if (!window.confirm("Are you sure you want to delete this organization? This action cannot be undone.")) return;

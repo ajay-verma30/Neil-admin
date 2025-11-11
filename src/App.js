@@ -29,6 +29,7 @@ import ModePrompt from './context/ModePrompt';
 import FullOrders from './Pages/Orders/Orders'
 import SpecificOrder from './Pages/Orders/SpecificOrder';
 import MyProfile from './Users/MyProfile';
+import MyProfile1 from './Pages/Users/MyProfile';
 import { AllProviders } from './context/AllProviders';
 import Categories from './Pages/SubCategories/Categories';
 
@@ -62,6 +63,7 @@ function AppRoutes() {
           <Route path='/admin/logos/new-logo' element={<ProtectedRoute><CreateLogos /></ProtectedRoute>} />
           <Route path='/admin/orders' element={<ProtectedRoute><FullOrders /></ProtectedRoute>} />
           <Route path='/admin/orders/:id' element={<ProtectedRoute><SpecificOrder /></ProtectedRoute>} />
+          <Route path='/admin/my-profile' element={<ProtectedRoute><MyProfile1/></ProtectedRoute>}/>
         </>
       )}
 
@@ -84,6 +86,7 @@ function AppRoutes() {
           <Route path='/:org_id/logos/new-logo' element={<ProtectedRoute><CreateLogos /></ProtectedRoute>} />
           <Route path='/:org_id/org_orders' element={<ProtectedRoute><FullOrders /></ProtectedRoute>} />
           <Route path='/:org_id/orders/:id' element={<ProtectedRoute><SpecificOrder /></ProtectedRoute>} />
+          <Route path='/:org_id/my-profile' element={<ProtectedRoute><MyProfile1/></ProtectedRoute>}/>
         </>
       )}
 

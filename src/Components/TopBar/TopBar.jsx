@@ -1,12 +1,11 @@
 import React, { useContext } from "react";
-import { Navbar, Nav, Container, Dropdown, Badge,Button } from "react-bootstrap";
+import { Navbar, Nav, Container, Dropdown,Button } from "react-bootstrap";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faUserCircle,
   faPowerOff,
-  faShoppingCart,
   faUser,
-  faBoxOpen, // ✅ added for Orders icon
+  faBoxOpen, 
 } from "@fortawesome/free-solid-svg-icons";
 import { AuthContext } from "../../context/AuthContext";
 import { useNavigate } from "react-router-dom";
@@ -51,7 +50,17 @@ function TopBar() {
     }
   };
 
-  const handleProfileNav = () => navigate("/my-profile")
+  const handleProfileNav = () => {
+    if (user.role === "Super Admin"){
+      navigate('/admin/my-profile');
+    }
+    else if(user.role === "Admin" || user.role === "Manager"){
+      navigate(`/${user?.org_id}/my-profile`);
+    }
+    else{
+      navigate('/my-profile')
+    }
+  }
   const handleCartClick = () => navigate("/cart");
   const handleOrdersClick = () => navigate("/orders"); 
 

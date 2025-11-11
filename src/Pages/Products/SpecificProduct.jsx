@@ -55,66 +55,61 @@ function EditProduct() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
+  const [categories, setCategories] = useState([]);
+const [subCategories, setSubCategories] = useState([]);
 
   // --- Data Fetching and Initialization ---
 
-  const fetchData = useCallback(async () => {
-    try {
-      setLoading(true);
-      const [productRes, groupsRes] = await Promise.all([
-        axios.get(`https://neil-backend-1.onrender.com/products/${id}`, {
-          headers: { Authorization: `Bearer ${accessToken}` },
-        }),
-        axios.get("https://neil-backend-1.onrender.com/groups/all", {
-          headers: { Authorization: `Bearer ${accessToken}` },
-        }),
-      ]);
+const fetchData = useCallback(async () => {
+  try {
+    setLoading(true);
+    const [productRes, groupsRes] = await Promise.all([
+      axios.get(`https://neil-backend-1.onrender.com/products/${id}`, {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      }),
+      axios.get("https://neil-backend-1.onrender.com/groups/all", {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      }),
+    ]);
 
-      const productData = productRes.data.product;
-      const allGroups = groupsRes.data.groups || [];
-      const visibilities = productData.group_visibility || [];
+    const { product, categories, sub_categories } = productRes.data;
+    const allGroups = groupsRes.data.groups || [];
+    const visibilities = product.group_visibility || [];
 
-      // Initialize base product details state
-      setProductDetails({
-        title: productData.title,
-        description: productData.description,
-        sku: productData.sku,
-        category: productData.category,
-        sub_cat: productData.sub_cat,
-        price: productData.price,
-        actual_price: productData.actual_price,
-        // ... include other editable base fields
-      });
+    setCategories(categories || []);
+    setSubCategories(sub_categories || []);
 
-      // Initialize variant state (add a temporary unique ID for new variants)
-      setCurrentVariants(
-        productData.variants.map((v) => ({ ...v, tempId: v.id }))
-      );
+    setProductDetails({
+      title: product.title || "",
+      description: product.description || "",
+      sku: product.sku || "",
+      category: product.category?.id || "",
+      sub_cat: product.sub_category?.id || "",
+      price: product.price || "",
+      actual_price: product.actual_price || "",
+    });
 
-      // Initialize product images state (existing images only)
-      setProductImages(
-        productData.images.map((img) => ({ ...img, isNew: false }))
-      );
+    setCurrentVariants((product.variants || []).map((v) => ({ ...v, tempId: v.id })));
+    setProductImages((product.images || []).map((img) => ({ ...img, isNew: false })));
 
-      // Initialize group visibility
-      const mergedVisibility = allGroups.map((g) => {
-        const match = visibilities.find((v) => v.group_id === g.id);
-        return {
-          group_id: g.id,
-          title: g.title,
-          is_visible: !!match?.is_visible,
-        };
-      });
+    const mergedVisibility = allGroups.map((g) => {
+      const match = visibilities.find((v) => v.group_id === g.id);
+      return {
+        group_id: g.id,
+        title: g.title,
+        is_visible: !!match?.is_visible,
+      };
+    });
+    setGroups(allGroups);
+    setGroupVisibility(mergedVisibility);
+  } catch (err) {
+    console.error(err);
+    setError("Failed to fetch product details.");
+  } finally {
+    setLoading(false);
+  }
+}, [accessToken, id]);
 
-      setGroups(allGroups);
-      setGroupVisibility(mergedVisibility);
-    } catch (err) {
-      console.error(err);
-      setError("Failed to fetch product details.");
-    } finally {
-      setLoading(false);
-    }
-  }, [accessToken, id]);
 
   useEffect(() => {
     if (accessToken && id) fetchData();
@@ -227,7 +222,7 @@ function EditProduct() {
     const files = Array.from(e.target.files);
     const newImages = files.map((file) => ({
       id: nanoid(),
-      url: URL.createObjectURL(file), // Temporary URL for preview
+      url: URL.createObjectURL(file), 
       file: file,
       isNew: true,
       fieldname: "productImages",
@@ -237,15 +232,13 @@ function EditProduct() {
 
   const deleteProductImage = (imageId, imageUrl, isNew) => {
     if (isNew) {
-      // If new, just remove from state and revoke temp URL
       setProductImages((prev) => prev.filter((img) => img.id !== imageId));
       URL.revokeObjectURL(imageUrl);
     } else {
-      // If existing, add URL to deletion list and remove from current display
       if (
         window.confirm("Are you sure you want to delete this existing image?")
       ) {
-        setDeletedImages((prev) => [...prev, imageUrl]); // Backend expects URL
+        setDeletedImages((prev) => [...prev, imageUrl]); 
         setProductImages((prev) => prev.filter((img) => img.id !== imageId));
       }
     }
@@ -262,8 +255,7 @@ function EditProduct() {
             url: URL.createObjectURL(file),
             file: file,
             isNew: true,
-            type: "other", // Default type, can be updated later if needed
-            // Match backend expected fieldname: variant-index-type
+            type: "other", 
             fieldname: `variant-${variantIndex}-${nanoid(4)}`,
           }));
           return { ...v, images: [...v.images, ...newVariantImages] };
@@ -273,18 +265,12 @@ function EditProduct() {
     );
   };
 
-  // Note: Variant image deletion logic is complex. For simplicity, we'll keep the existing ones
-  // and only handle NEW image deletion here. For EXISTING variant images, you'd need
-  // a `deleted_variant_images` array and a complex UI/state similar to product images.
-  // We'll leave the existing variant images as read-only/unremovable for this base version.
 
   // --- Submission Handler ---
 
   const handleUpdate = async (e) => {
     e.preventDefault();
     if (isSubmitting) return;
-
-    // A. Construct FormData for multipart upload
     const formData = new FormData();
     setIsSubmitting(true);
     setMessage("");
@@ -307,7 +293,6 @@ function EditProduct() {
       formData.append("deleted_variants", JSON.stringify(deletedVariants));
     }
 
-    // 4. Prepare Variants Payload (ensuring sizes are correctly formatted)
     const variantsPayload = currentVariants.map((v) => {
       // Find all image files associated with this variant
       const newVariantImageFiles = v.images.filter((img) => img.isNew);
@@ -316,7 +301,6 @@ function EditProduct() {
         id: v.id || null, // Important: ID is null for new variants, or actual ID for existing
         color: v.color,
         sku: v.sku,
-        // Sizes are sent as an array of objects
         sizes: v.attributes.map((attr) => ({
           name: attr.name,
           adjustment: attr.adjustment,
@@ -512,25 +496,50 @@ function EditProduct() {
                       </Form.Group>
                     </Col>
                     <Col md={3}>
-                      <Form.Group className="mb-3">
-                        <Form.Label>Category</Form.Label>
-                        <Form.Control
-                          name="category"
-                          value={productDetails.category}
-                          onChange={handleDetailChange}
-                        />
-                      </Form.Group>
-                    </Col>
-                    <Col md={3}>
-                      <Form.Group className="mb-3">
-                        <Form.Label>Sub Category</Form.Label>
-                        <Form.Control
-                          name="sub_cat"
-                          value={productDetails.sub_cat || ""}
-                          onChange={handleDetailChange}
-                        />
-                      </Form.Group>
-                    </Col>
+  <Form.Group className="mb-3">
+    <Form.Label>Category</Form.Label>
+    <Form.Select
+      name="category"
+      value={productDetails.category || ""}
+      onChange={(e) => {
+        const selectedCategoryId = e.target.value;
+        setProductDetails((prev) => ({
+          ...prev,
+          category: selectedCategoryId,
+          sub_cat: "", 
+        }));
+      }}
+    >
+      <option value="">Select Category</option>
+      {categories.map((cat) => (
+        <option key={cat.id} value={cat.id}>
+          {cat.title}
+        </option>
+      ))}
+    </Form.Select>
+  </Form.Group>
+</Col>
+
+<Col md={3}>
+  <Form.Group className="mb-3">
+    <Form.Label>Sub Category</Form.Label>
+    <Form.Select
+      name="sub_cat"
+      value={productDetails.sub_cat || ""}
+      onChange={handleDetailChange}
+    >
+      <option value="">Select Subcategory</option>
+      {subCategories
+        .filter((sub) => sub.category_id === Number(productDetails.category))
+        .map((sub) => (
+          <option key={sub.id} value={sub.id}>
+            {sub.title}
+          </option>
+        ))}
+    </Form.Select>
+  </Form.Group>
+</Col>
+
                   </Row>
 
                   <Form.Group className="mb-3">
