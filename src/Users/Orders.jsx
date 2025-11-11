@@ -3,6 +3,7 @@ import { Container, Table, Badge, Spinner, Alert, Button } from "react-bootstrap
 import { AuthContext } from "../context/AuthContext";
 import TopBar from "../Components/TopBar/TopBar";
 import axios from "axios";
+import Footer from "./Footer";
 
 function Orders() {
   const { user, accessToken } = useContext(AuthContext);
@@ -127,6 +128,8 @@ function Orders() {
           </Table>
         )}
       </Container>
+
+      <Footer/>
     </>
   );
 }

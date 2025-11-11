@@ -23,6 +23,7 @@ import {
   TelephoneFill,
   CalendarDate,
 } from "react-bootstrap-icons";
+import Footer from "./Footer";
 
 function MyProfile() {
   const { user, accessToken } = useContext(AuthContext);
@@ -596,6 +597,7 @@ function MyProfile() {
           </Form>
         </Modal.Body>
       </Modal>
+      <Footer/>
     </div>
   );
 }

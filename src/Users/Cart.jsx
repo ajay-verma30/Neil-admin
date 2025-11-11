@@ -12,6 +12,7 @@ import {
   Form,
 } from "react-bootstrap";
 import axios from "axios";
+import Footer from "./Footer";
 
 function Cart() {
   const { user, accessToken } = useContext(AuthContext);
@@ -513,7 +514,7 @@ const [addressContext, setAddressContext] = useState("");
 
   </Modal.Footer>
 </Modal>
-
+<Footer/>
     </>
   );
 }
