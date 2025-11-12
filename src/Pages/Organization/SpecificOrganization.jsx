@@ -83,7 +83,7 @@ const handleMarkInactive = async (orgId) => {
   if (!window.confirm("Are you sure you want to delete this organization? This action cannot be undone.")) return;
 
   try {
-    await axios.delete(`http://localhost:3000/organization/${orgId}`, {
+    await axios.delete(`https://neil-admin.vercel.app/organization/${orgId}`, {
       headers: { Authorization: `Bearer ${accessToken}` },
     });
     alert("Organization deleted successfully.");
