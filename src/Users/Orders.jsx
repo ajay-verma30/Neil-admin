@@ -47,9 +47,9 @@ function Orders() {
   };
 
   return (
-    <>
+    <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
       <TopBar />
-      <Container className="py-4 form-box">
+      <Container className="py-4 form-box" style={{ flex: 1, paddingBottom: "100px" }}>
         <h3 className="mb-4">📦 My Orders</h3>
 
         {loading ? (
@@ -92,7 +92,7 @@ function Orders() {
                     </Badge>
                   </td>
                   <td>
-                  {new Date(order.created_at).toLocaleDateString()}
+                    {new Date(order.created_at).toLocaleDateString()}
                   </td>
                   {user?.role === "Super Admin" && (
                     <td>
@@ -129,8 +129,8 @@ function Orders() {
         )}
       </Container>
 
-      <Footer/>
-    </>
+      <Footer style={{ position: "fixed", bottom: 0, left: 0, right: 0, width: "100%" }} />
+    </div>
   );
 }
 
