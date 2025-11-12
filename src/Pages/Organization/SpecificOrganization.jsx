@@ -2,6 +2,9 @@ import React, { useContext, useState, useEffect } from "react";
 import { Row, Col, Card, Alert, Button, Spinner } from "react-bootstrap";
 import { useParams } from "react-router-dom";
 import axios from "axios";
+import { AuthContext } from "../../context/AuthContext";
+import TopBar from "../../Components/TopBar/TopBar";
+import Sidebar from "../../Components/SideBar/SideBar";
 const IconMap = {
   BriefcaseFill: (props) => <i className="bi bi-briefcase-fill" {...props} />,
   CalendarFill: (props) => <i className="bi bi-calendar-fill" {...props} />,
@@ -63,11 +66,7 @@ function SpecificOrganization() {
   const { id, org_id } = useParams();
   const effectiveId = id || org_id;
   
-  const authContextMock = {
-    accessToken: "mock-token", 
-    user: { role: "Super Admin" }, 
-  };
-  const { accessToken, user } = authContextMock; 
+  const { accessToken, user } = useContext(AuthContext); 
 
 
   const [org, setOrg] = useState(null);
@@ -91,6 +90,7 @@ function SpecificOrganization() {
         const res = await axios.get(`${API_BASE_URL}/organization/${effectiveId}`, {
           headers: { Authorization: `Bearer ${accessToken}` },
         });
+        console.log(res)
         setOrg(res.data.organization);
       } catch (err) {
         const backendMessage = err.response?.data?.message;
@@ -163,17 +163,6 @@ function SpecificOrganization() {
   if (!org) return <div className="text-center mt-5 text-muted">No organization found.</div>;
 
   const admin = org.admin || {};
-  
-  const MockTopBar = () => <div className="bg-white shadow-sm p-3 border-bottom text-muted">Admin Dashboard: Organization Detail</div>;
-  const MockSidebar = () => (
-    <div className="bg-light p-3 h-100 border-end">
-      <p className="fw-bold mb-3">Navigation</p>
-      <ul className="list-unstyled">
-        <li><a href="/admin/organizations" className="text-primary text-decoration-none">← Back to Organizations</a></li>
-      </ul>
-    </div>
-  );
-
   return (
     <>
       <CustomModal
@@ -201,11 +190,10 @@ function SpecificOrganization() {
           {alertMessage.message}
         </Alert>
       )}
-
-      <MockTopBar />
+      <TopBar/>
       <Row className="g-0">
         <Col xs={2} md={2}>
-          <MockSidebar /> 
+          <Sidebar/>
         </Col>
         <Col xs={10} md={10}>
           <div className="p-4 form-box" style={{ backgroundColor: "#f8f9fa", minHeight: "100vh" }}>
