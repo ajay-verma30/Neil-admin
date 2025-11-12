@@ -362,9 +362,14 @@ function UserProduct() {
               <div className="mb-4">
                 <h2 className="mb-2">{product.title}</h2>
                 <p className="text-muted mb-3">
-                  {product.category}
-                  {product.sub_cat && ` > ${product.sub_cat}`}
-                </p>
+  {product.category?.title || product.category_name || ""}
+  {product.sub_cat && (
+    <>
+      {" > "}
+      {typeof product.sub_cat === "object" ? product.sub_cat.title : product.sub_cat}
+    </>
+  )}
+</p>
                 <div className="d-flex align-items-baseline gap-3">
                   <h4 className="text-primary mb-0">${Number(productVariant?.price || product?.price || 0).toFixed(2)}</h4>
                   <small className="text-muted">Base price per unit</small>
