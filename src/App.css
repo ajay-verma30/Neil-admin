@@ -27,3 +27,7 @@ body{
 .reset-password-btn{
   width: 15%;
 }
+
+.modal{
+  z-index: 99999 !important;
+}

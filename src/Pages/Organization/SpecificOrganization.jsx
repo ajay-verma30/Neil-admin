@@ -117,7 +117,7 @@ function SpecificOrganization() {
       setUpdatingStatus(true);
       const res = await axios.patch(
         `${API_BASE_URL}/organization/${orgId}/status`,
-        { status: !org.status }, // toggle
+        { status: !org.status }, 
         { headers: { Authorization: `Bearer ${accessToken}` } }
       );
 
