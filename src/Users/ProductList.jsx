@@ -3,8 +3,105 @@ import axios from "axios";
 import { AuthContext } from "../context/AuthContext";
 import { Container, Row, Col, Card, Button, Spinner, Alert, ListGroup } from "react-bootstrap";
 import { useNavigate } from "react-router-dom";
-import { ChevronDown, Filter } from "lucide-react";
+import { ChevronDown, Filter, X, ChevronRight } from "lucide-react";
 
+// Filter Display Component
+function FilterDisplay({ 
+  categories, 
+  selectedSubcategory, 
+  onSubcategorySelect 
+}) {
+  
+  const getSelectedInfo = () => {
+    for (const cat of categories) {
+      if (cat.sub_categories) {
+        const sub = cat.sub_categories.find(s => s.id === selectedSubcategory);
+        if (sub) {
+          return { 
+            categoryId: cat.id,
+            categoryTitle: cat.title, 
+            subcategoryTitle: sub.title,
+            subcategoryId: sub.id
+          };
+        }
+      }
+    }
+    return null;
+  };
+
+  const selectedInfo = getSelectedInfo();
+
+  if (!selectedInfo) {
+    return (
+      <div className="filters mb-4 p-3 bg-light rounded-3 border border-secondary-subtle">
+        <p className="text-muted small mb-0">
+          <em>No filters applied — Select a subcategory from the left panel</em>
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="filters mb-4">
+      <div className="p-3 bg-light rounded-3 border border-primary border-2">
+        <div className="d-flex align-items-center justify-content-between">
+          <div className="d-flex align-items-center gap-3">
+            <span className="fw-semibold text-dark small">Active Filter:</span>
+            
+            <div className="d-flex align-items-center gap-2 flex-wrap">
+              {/* Category Badge */}
+              <span className="badge bg-primary-subtle text-primary py-2 px-3">
+                {selectedInfo.categoryTitle}
+              </span>
+              
+              {/* Arrow */}
+              <ChevronRight size={18} className="text-primary" />
+              
+              {/* Subcategory Badge */}
+              <span className="badge bg-info-subtle text-info py-2 px-3">
+                {selectedInfo.subcategoryTitle}
+              </span>
+            </div>
+          </div>
+
+          {/* Clear Button */}
+          <button
+            onClick={() => onSubcategorySelect(null)}
+            className="btn btn-sm btn-outline-danger d-flex align-items-center gap-2"
+            title="Clear filter"
+          >
+            <X size={16} />
+            <span className="small">Clear</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Optional: Show quick access to other subcategories */}
+      <div className="mt-3">
+        <p className="text-muted small fw-semibold mb-2">Switch to another subcategory:</p>
+        <div className="d-flex flex-wrap gap-2">
+          {categories.map((cat) => (
+            cat.sub_categories && cat.sub_categories.map((sub) => (
+              <button
+                key={sub.id}
+                onClick={() => onSubcategorySelect(sub.id)}
+                className={`btn btn-sm ${
+                  selectedSubcategory === sub.id
+                    ? 'btn-primary'
+                    : 'btn-outline-secondary'
+                }`}
+              >
+                {sub.title}
+              </button>
+            ))
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Main ProductList Component
 function ProductList() {
     const navigate = useNavigate();
     const [expandedCategory, setExpandedCategory] = useState(null);
@@ -23,8 +120,8 @@ function ProductList() {
             try {
                 setLoading(true);
                 setError("");
-                // Optionally pass selectedSubcategory to backend for server-side filtering
-                const filterQuery = selectedSubcategory ? `?sub_cat=${selectedSubcategory}` : '';
+                // Send sub_category_id as query parameter (it's the ID, not title)
+                const filterQuery = selectedSubcategory ? `?sub_category_id=${selectedSubcategory}` : '';
                 const res = await axios.get(`https://neil-backend-1.onrender.com/products/all-products${filterQuery}`, {
                     headers: { Authorization: `Bearer ${accessToken}` },
                 });
@@ -53,27 +150,27 @@ function ProductList() {
                 const res = await axios.get("https://neil-backend-1.onrender.com/products/categories", {
                     headers: { "Authorization": `Bearer ${accessToken}` }
                 })
-                setCategories(res.data.data || []);
+                const catData = res.data.data || [];
+                console.log("🔍 Categories API Response:", catData);
+                console.log("🔍 First category sub_categories:", catData[0]?.sub_categories);
+                setCategories(catData);
             } catch (e) {
                 console.error("Failed to fetch categories:", e);
-                // Optionally set a category error, but don't block product list rendering
             }
         }
         getCategories();
     }, [accessToken]);
 
-    // --- Filtering Logic (Client-side Fallback) ---
-    // If you implemented server-side filtering (by changing the useEffect above), 
-    // this client-side filter is only needed for initial data load or if server-side filtering isn't available.
-
+    // --- Filtering Logic ---
+    // This filters by sub_category_title (string) for display purposes
     const filteredProducts = useMemo(() => {
         if (!selectedSubcategory) {
             return products;
         }
-        // Client-side filtering if you don't use the sub_cat query parameter in the useEffect
-        return products.filter(product => product.sub_cat === selectedSubcategory);
+        // The selectedSubcategory is now an ID, but products have sub_category_title
+        // Since we're filtering server-side via ID, just return all products from the API
+        return products;
     }, [products, selectedSubcategory]);
-
 
     // --- Handlers ---
 
@@ -81,14 +178,30 @@ function ProductList() {
         setExpandedCategory(expandedCategory === index ? null : index);
     };
 
-    const handleSubcategorySelect = (sub) => {
-        // Toggle off if the same subcategory is clicked again
-        setSelectedSubcategory(selectedSubcategory === sub ? null : sub);
+    const handleSubcategorySelect = (subId) => {
+        setSelectedSubcategory(selectedSubcategory === subId ? null : subId);
     };
+
     
     const productNav = (id) => {
         navigate(`/products/${id}`);
     };
+
+
+    const getSelectedSubcategoryTitle = () => {
+        for (const cat of categories) {
+            if (cat.sub_categories) {
+                for (const sub of cat.sub_categories) {
+                    if (sub.id === selectedSubcategory) {
+                        return sub.title;
+                    }
+                }
+            }
+        }
+        return null;
+    };
+
+    const selectedSubcategoryTitle = getSelectedSubcategoryTitle();
 
     // --- Render Logic ---
 
@@ -137,10 +250,6 @@ function ProductList() {
     return (
         <Container fluid className="p-0 bg-light min-vh-100">
             <Row className="g-0">
-                {/* FIX: Using React-Bootstrap classes for the sidebar
-                  Changed Col xs={2} to Col lg={3} for better desktop layout, 
-                  and added sticky positioning/styling.
-                */}
                 <Col lg={3} xl={2} className="d-none d-lg-block"> 
                     <div 
                         className="bg-white border-end shadow-sm" 
@@ -188,19 +297,25 @@ function ProductList() {
                                                 cat.sub_categories &&
                                                 cat.sub_categories.length > 0 && (
                                                     <ListGroup className="ms-2 mt-2 border-start border-primary border-3">
-                                                        {cat.sub_categories.map((sub, i) => (
-                                                            <ListGroup.Item
-                                                                key={i}
-                                                                action
-                                                                onClick={() => handleSubcategorySelect(sub)}
-                                                                active={selectedSubcategory === sub}
-                                                                className="py-2 small border-0 ps-4"
-                                                            >
-                                                                {sub}
-                                                            </ListGroup.Item>
-                                                        ))}
+                                                        {cat.sub_categories.map((sub, i) => {
+                                                            const subId = typeof sub === "object" ? sub.id : sub;
+                                                            const subTitle = typeof sub === "object" ? sub.title : sub;
+
+                                                            return (
+                                                                <ListGroup.Item
+                                                                    key={i}
+                                                                    action
+                                                                    onClick={() => handleSubcategorySelect(subId)}
+                                                                    active={selectedSubcategory === subId}
+                                                                    className="py-2 small border-0 ps-4"
+                                                                >
+                                                                    {subTitle} 
+                                                                </ListGroup.Item>
+                                                            );
+                                                        })}
                                                     </ListGroup>
-                                                )}
+                                            )}
+
                                         </div>
                                     ))}
                                 </ListGroup>
@@ -215,7 +330,7 @@ function ProductList() {
                                     onClick={() => setSelectedSubcategory(null)}
                                     className="w-100"
                                 >
-                                    Clear Filter: **{selectedSubcategory}**
+                                    Clear Filters
                                 </Button>
                             </div>
                         )}
@@ -223,23 +338,19 @@ function ProductList() {
                 </Col>
 
                 {/* Product List Content */}
-                {/* Changed Col xs={10} to Col lg={9} to match the new filter sidebar size */}
                 <Col xs={12} lg={9} xl={10} className="p-4"> 
                     <Container>
-                        <div className="mb-4">
-                            <h3 className="fw-bold">Products</h3>
-                            <p className="text-muted mb-0">
-                                Viewing {filteredProducts.length} of {products.length} total items.
-                                {selectedSubcategory && (
-                                    <span className="ms-2 badge bg-primary">Filtered by: {selectedSubcategory}</span>
-                                )}
-                            </p>
-                        </div>
+
+                        <FilterDisplay 
+                            categories={categories}
+                            selectedSubcategory={selectedSubcategory}
+                            onSubcategorySelect={handleSubcategorySelect}
+                        />
 
                         {filteredProducts.length === 0 && selectedSubcategory ? (
                              <Alert variant="info" className="text-center my-5">
                                 <Alert.Heading>No Products Found</Alert.Heading>
-                                <p>There are no products matching the subcategory **{selectedSubcategory}**.</p>
+                                <p>There are no products matching the subcategory <strong>{selectedSubcategoryTitle}</strong>.</p>
                                 <Button variant="outline-info" onClick={() => setSelectedSubcategory(null)}>
                                     Show All Products
                                 </Button>
@@ -282,9 +393,9 @@ function ProductList() {
                                                                 {product.category}
                                                             </span>
                                                         )}
-                                                        {product.sub_cat && (
+                                                        {product.sub_category && (
                                                             <span className="badge bg-info-subtle text-info">
-                                                                {product.sub_cat}
+                                                                {product.sub_category}
                                                             </span>
                                                         )}
                                                     </div>

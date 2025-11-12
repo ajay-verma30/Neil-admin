@@ -11,7 +11,7 @@ import {
   Alert,
   Badge,
   Button,
-  Form,
+  Form
 } from "react-bootstrap";
 import TopBar from "../Components/TopBar/TopBar";
 import { AuthContext } from "../context/AuthContext";
@@ -121,6 +121,7 @@ function UserProduct() {
     };
     fetchData();
   }, [id, accessToken]);
+
 
   useEffect(() => {
     if (!product) return;
@@ -284,10 +285,9 @@ function UserProduct() {
         <Button variant="outline-secondary" size="sm" onClick={() => navigate(-1)} className="mb-4">
           ← Back to Products
         </Button>
-        
+
         <Row className="g-4">
-          {/* Product Preview - Left Column */}
-          <Col lg={5} md={6} className="d-flex">
+          <Col lg={4} md={4} className="d-flex">
             <Card className="shadow-sm border-0 w-100">
               <div 
                 id="product-preview-area" 
@@ -299,7 +299,7 @@ function UserProduct() {
                     src={mainImageUrl}
                     alt={product.title}
                     className="w-100 h-100"
-                    style={{ objectFit: "contain" }}
+                    style={{ objectFit: "cover" }}
                     crossOrigin="anonymous"
                   />
                 ) : (
@@ -308,7 +308,6 @@ function UserProduct() {
                   </div>
                 )}
                 
-                {/* Logo Overlays */}
                 {logoVariant &&
                   selectedPlacementIds.map(pid => {
                     const placement = logoVariant.placements.find(p => String(p.id) === String(pid));
@@ -355,10 +354,8 @@ function UserProduct() {
             </Card>
           </Col>
 
-          {/* Product Details - Right Column */}
           <Col lg={7} md={6}>
             <Card className="shadow-sm border-0 p-4">
-              {/* Header */}
               <div className="mb-4">
                 <h2 className="mb-2">{product.title}</h2>
                 <p className="text-muted mb-3">
@@ -382,10 +379,8 @@ function UserProduct() {
 
               <hr className="my-4" />
 
-              {/* Selectors */}
               <div className="mb-4">
                 <Row className="g-3">
-                  {/* Variant Selector */}
                   {product.variants?.length > 0 && (
                     <Col md={4}>
                       <Form.Group>
@@ -546,10 +541,8 @@ function UserProduct() {
                 
                 <Button 
                   variant="primary" 
-                  size="lg"
                   onClick={handleAddToCart} 
                   disabled={isProcessing}
-                  className="w-100"
                 >
                   {isProcessing ? (
                     <>
