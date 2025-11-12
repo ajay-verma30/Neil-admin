@@ -15,14 +15,14 @@ import {
 } from "react-bootstrap";
 import TopBar from "../Components/TopBar/TopBar";
 import { AuthContext } from "../context/AuthContext";
-import {CartContext} from '../context/CartContext';
+import { CartContext } from '../context/CartContext';
 import Footer from "./Footer";
 
 function UserProduct() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { accessToken, user } = useContext(AuthContext);
-  const {addToCart} = useContext(CartContext)
+  const { addToCart } = useContext(CartContext)
   const [product, setProduct] = useState(null);
   const [logos, setLogos] = useState([]);
   const [selectedVariantId, setSelectedVariantId] = useState(null);
@@ -136,7 +136,12 @@ function UserProduct() {
   }, [selectedView, productVariant, product]);
 
   const togglePlacement = pid => {
-    setSelectedPlacementIds(prev => (prev.includes(pid) ? prev.filter(p => p !== pid) : [...prev, pid]));
+    // Only allow selection if a logo and variant are selected
+    if (logoVariant) {
+        setSelectedPlacementIds(prev => (prev.includes(pid) ? prev.filter(p => p !== pid) : [...prev, pid]));
+    } else {
+        setMessage("⚠️ Please select a logo before choosing a placement.");
+    }
   };
 
   const handleQuantityChange = (size, value) => {
@@ -148,7 +153,7 @@ function UserProduct() {
     setMessage("");
     setIsProcessing(true);
     const totalQuantity = Object.values(quantities).reduce((a, b) => a + b, 0);
-    
+
     if (totalQuantity === 0) {
       setMessage("⚠️ Please enter a quantity before adding to cart.");
       setIsProcessing(false);
@@ -160,16 +165,29 @@ function UserProduct() {
       setIsProcessing(false);
       return;
     }
-    
+
+    // --- START OF MODIFICATION ---
+    // Make logo/placement optional by REMOVING this validation block:
+    /*
     if (!selectedPlacementIds || selectedPlacementIds.length === 0) {
         setMessage("⚠️ Please select at least one logo placement before adding to cart.");
         setIsProcessing(false);
         return;
     }
+    */
+    // --- END OF MODIFICATION ---
     
+    // Determine if we need to show the logo in the preview
+    const showLogo = selectedPlacementIds.length > 0 && logoVariant;
+
     try {
       const previewEl = document.getElementById("product-preview-area");
       if (!previewEl) throw new Error("Preview element not found.");
+
+      // If no placement is selected, we might want to temporarily hide the logo elements
+      // or simply rely on html2canvas capturing the current state (which works fine 
+      // since the logo elements won't be rendered if selectedPlacementIds is empty).
+      
       const canvas = await html2canvas(previewEl, {
         backgroundColor: null,
         scale: 2,
@@ -177,18 +195,20 @@ function UserProduct() {
       });
       const blob = await new Promise(resolve => canvas.toBlob(resolve, "image/png"));
       const file = new File([blob], "custom_preview.png", { type: "image/png" });
-      
+
       const formData = new FormData();
       formData.append("user_id", user?.id || "temporary_user");
       formData.append("product_variant_id", selectedVariantId);
-      formData.append("logo_variant_id", selectedLogoVariantId);
-      formData.append("placement_id", selectedPlacementIds[0]);
+
+      // Pass optional fields, defaulting to an empty string if not selected.
+      // The backend will treat these as NULL if they are empty strings.
+      formData.append("logo_variant_id", selectedLogoVariantId || "");
+      formData.append("placement_id", selectedPlacementIds[0] || "");
       formData.append("preview", file);
-      
+
       const customizationRes = await axios.post("https://neil-backend-1.onrender.com/customization/new", formData, {
         headers: {
-          Authorization: `Bearer ${accessToken}`,
-          "Content-Type": "multipart/form-data",
+          Authorization: `Bearer ${accessToken}`
         },
       });
       const customization = customizationRes.data.customization;
@@ -199,7 +219,7 @@ function UserProduct() {
         title: product.title,
         image: customization.preview_image_url,
         quantity: totalQuantity,
-        customizations_id:customization.id,
+        customizations_id: customization.id,
         total_price: totalPrice.toFixed(2),
 
         sizes: Object.entries(quantities).reduce((acc, [size, qty]) => {
@@ -219,7 +239,7 @@ function UserProduct() {
       };
 
       try {
-        const cartRes = await axios.post( 
+        await axios.post(
           "https://neil-backend-1.onrender.com/cart/add",
           {
             user_id: user.id,
@@ -243,7 +263,7 @@ function UserProduct() {
       } catch (err) {
         setMessage(err.response?.data?.message || "❌ Failed to add to cart.");
       }
-      
+
     } catch (err) {
       setMessage(err.response?.data?.message || "❌ Failed to save customization or add to cart.");
     } finally {
@@ -359,14 +379,14 @@ function UserProduct() {
               <div className="mb-4">
                 <h2 className="mb-2">{product.title}</h2>
                 <p className="text-muted mb-3">
-  {product.category?.title || product.category_name || ""}
-  {product.sub_cat && (
-    <>
-      {" > "}
-      {typeof product.sub_cat === "object" ? product.sub_cat.title : product.sub_cat}
-    </>
-  )}
-</p>
+                  {product.category?.title || product.category_name || ""}
+                  {product.sub_cat && (
+                    <>
+                      {" > "}
+                      {typeof product.sub_cat === "object" ? product.sub_cat.title : product.sub_cat}
+                    </>
+                  )}
+                </p>
                 <div className="d-flex align-items-baseline gap-3">
                   <h4 className="text-primary mb-0">${Number(productVariant?.price || product?.price || 0).toFixed(2)}</h4>
                   <small className="text-muted">Base price per unit</small>
@@ -424,10 +444,12 @@ function UserProduct() {
                     <Col md={4}>
                       <Form.Group>
                         <Form.Label className="fw-bold">Select Logo</Form.Label>
+                        {/* Added an optional blank option */}
                         <Form.Select 
                           value={selectedLogoId || ""} 
                           onChange={e => setSelectedLogoId(e.target.value)}
                         >
+                          <option value="">(No Logo)</option>
                           {logos.map(l => (
                             <option key={l.id} value={l.id}>
                               {l.title}
@@ -479,7 +501,7 @@ function UserProduct() {
                 )}
 
               {/* Placements */}
-              {viewPlacements.length > 0 && (
+              {viewPlacements.length > 0 && selectedLogoId && (
                 <div className="mb-4">
                   <Form.Label className="fw-bold d-block mb-2">Logo Placements</Form.Label>
                   <div className="d-flex flex-wrap gap-2">
@@ -569,7 +591,7 @@ function UserProduct() {
           </Col>
         </Row>
       </Container>
-      <Footer/>
+<Footer style={{ position: "fixed", bottom: 0, left: 0, right: 0, width: "100%" }} />
     </>
   );
 }

@@ -36,8 +36,8 @@ function Cart() {
   });
   const [savingAddress, setSavingAddress] = useState(false);
   const [selectedShipping, setSelectedShipping] = useState("");
-const [selectedBilling, setSelectedBilling] = useState("");
-const [addressContext, setAddressContext] = useState("");
+  const [selectedBilling, setSelectedBilling] = useState("");
+  const [addressContext, setAddressContext] = useState("");
 
   useEffect(() => {
     if (!user) {
@@ -142,9 +142,9 @@ const [addressContext, setAddressContext] = useState("");
   };
 
   return (
-    <>
+    <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
       <TopBar />
-      <Container className="mt-5 pt-5">
+      <Container className="mt-5 pt-5" style={{ flex: 1, paddingBottom: "100px" }}>
         <h3 className="mb-4 fw-bold text-primary">🛒 My Cart</h3>
 
         {loading ? (
@@ -229,293 +229,293 @@ const [addressContext, setAddressContext] = useState("");
       </Container>
 
       {/* 🏠 Address Modal */}
-     <Modal
-  show={showAddressModal}
-  onHide={() => setShowAddressModal(false)}
-  size="lg"
-  centered
-  className="form-box"
->
-  <Modal.Header closeButton>
-    <Modal.Title>Select Shipping & Billing Addresses</Modal.Title>
-  </Modal.Header>
-  <Modal.Body>
-    {fetchingAddresses ? (
-      <div className="text-center py-4">
-        <Spinner animation="border" />
-      </div>
-    ) : (
-      <div className="row">
-        {/* 🏠 Shipping Address */}
-        <div className="col-md-6 border-end">
-          <h5 className="fw-bold mb-3 text-primary">Shipping Address</h5>
-
-          {addresses.length > 0 ? (
-            <>
-              <Form.Group className="mb-3">
-                <Form.Select
-                  value={selectedShipping || ""}
-                  onChange={(e) => setSelectedShipping(e.target.value)}
-                >
-                  <option value="">Select Shipping Address</option>
-                  {addresses.map((addr) => (
-                    <option key={addr.id} value={addr.id}>
-                      {addr.type} - {addr.city}, {addr.state}
-                    </option>
-                  ))}
-                </Form.Select>
-              </Form.Group>
-              <Button
-                variant="outline-primary"
-                size="sm"
-                onClick={() => {
-                  setShowNewAddressForm(true);
-                  setAddressContext("shipping");
-                }}
-              >
-                ➕ Add New Shipping Address
-              </Button>
-            </>
+      <Modal
+        show={showAddressModal}
+        onHide={() => setShowAddressModal(false)}
+        size="lg"
+        centered
+        className="form-box"
+      >
+        <Modal.Header closeButton>
+          <Modal.Title>Select Shipping & Billing Addresses</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          {fetchingAddresses ? (
+            <div className="text-center py-4">
+              <Spinner animation="border" />
+            </div>
           ) : (
-            <div className="text-center">
-              <p>No addresses found.</p>
-              <Button
-                variant="outline-primary"
-                size="sm"
-                onClick={() => {
-                  setShowNewAddressForm(true);
-                  setAddressContext("shipping");
-                }}
-              >
-                ➕ Add Address
-              </Button>
+            <div className="row">
+              {/* 🏠 Shipping Address */}
+              <div className="col-md-6 border-end">
+                <h5 className="fw-bold mb-3 text-primary">Shipping Address</h5>
+
+                {addresses.length > 0 ? (
+                  <>
+                    <Form.Group className="mb-3">
+                      <Form.Select
+                        value={selectedShipping || ""}
+                        onChange={(e) => setSelectedShipping(e.target.value)}
+                      >
+                        <option value="">Select Shipping Address</option>
+                        {addresses.map((addr) => (
+                          <option key={addr.id} value={addr.id}>
+                            {addr.type} - {addr.city}, {addr.state}
+                          </option>
+                        ))}
+                      </Form.Select>
+                    </Form.Group>
+                    <Button
+                      variant="outline-primary"
+                      size="sm"
+                      onClick={() => {
+                        setShowNewAddressForm(true);
+                        setAddressContext("shipping");
+                      }}
+                    >
+                      ➕ Add New Shipping Address
+                    </Button>
+                  </>
+                ) : (
+                  <div className="text-center">
+                    <p>No addresses found.</p>
+                    <Button
+                      variant="outline-primary"
+                      size="sm"
+                      onClick={() => {
+                        setShowNewAddressForm(true);
+                        setAddressContext("shipping");
+                      }}
+                    >
+                      ➕ Add Address
+                    </Button>
+                  </div>
+                )}
+              </div>
+
+              {/* 💳 Billing Address */}
+              <div className="col-md-6">
+                <h5 className="fw-bold mb-3 text-success">Billing Address</h5>
+
+                {addresses.length > 0 ? (
+                  <>
+                    <Form.Group className="mb-3">
+                      <Form.Select
+                        value={selectedBilling || ""}
+                        onChange={(e) => setSelectedBilling(e.target.value)}
+                      >
+                        <option value="">Select Billing Address</option>
+                        {addresses.map((addr) => (
+                          <option key={addr.id} value={addr.id}>
+                            {addr.type} - {addr.city}, {addr.state}
+                          </option>
+                        ))}
+                      </Form.Select>
+                    </Form.Group>
+                    <Button
+                      variant="outline-success"
+                      size="sm"
+                      onClick={() => {
+                        setShowNewAddressForm(true);
+                        setAddressContext("billing");
+                      }}
+                    >
+                      ➕ Add New Billing Address
+                    </Button>
+                  </>
+                ) : (
+                  <div className="text-center">
+                    <p>No addresses found.</p>
+                    <Button
+                      variant="outline-success"
+                      size="sm"
+                      onClick={() => {
+                        setShowNewAddressForm(true);
+                        setAddressContext("billing");
+                      }}
+                    >
+                      ➕ Add Address
+                    </Button>
+                  </div>
+                )}
+              </div>
             </div>
           )}
-        </div>
 
-        {/* 💳 Billing Address */}
-        <div className="col-md-6">
-          <h5 className="fw-bold mb-3 text-success">Billing Address</h5>
+          {/* ➕ Add Address Form */}
+          {showNewAddressForm && (
+            <div className="mt-4 border-top pt-3">
+              <h6 className="fw-bold">
+                Add New {addressContext === "shipping" ? "Shipping" : "Billing"} Address
+              </h6>
+              <Form className="mt-3" onSubmit={handleSaveAddress}>
+                <Form.Group className="mb-2">
+                  <Form.Label>Type</Form.Label>
+                  <Form.Control
+                    type="text"
+                    value={newAddress.type}
+                    onChange={(e) =>
+                      setNewAddress({ ...newAddress, type: e.target.value })
+                    }
+                  />
+                </Form.Group>
+                <Form.Group className="mb-2">
+                  <Form.Label>Address Line 1</Form.Label>
+                  <Form.Control
+                    type="text"
+                    value={newAddress.address_line_1}
+                    onChange={(e) =>
+                      setNewAddress({ ...newAddress, address_line_1: e.target.value })
+                    }
+                  />
+                </Form.Group>
+                <Form.Group className="mb-2">
+                  <Form.Label>Address Line 2</Form.Label>
+                  <Form.Control
+                    type="text"
+                    value={newAddress.address_line_2}
+                    onChange={(e) =>
+                      setNewAddress({ ...newAddress, address_line_2: e.target.value })
+                    }
+                  />
+                </Form.Group>
+                <div className="row">
+                  <div className="col-md-6">
+                    <Form.Group className="mb-2">
+                      <Form.Label>City</Form.Label>
+                      <Form.Control
+                        type="text"
+                        value={newAddress.city}
+                        onChange={(e) =>
+                          setNewAddress({ ...newAddress, city: e.target.value })
+                        }
+                      />
+                    </Form.Group>
+                  </div>
+                  <div className="col-md-6">
+                    <Form.Group className="mb-2">
+                      <Form.Label>State</Form.Label>
+                      <Form.Control
+                        type="text"
+                        value={newAddress.state}
+                        onChange={(e) =>
+                          setNewAddress({ ...newAddress, state: e.target.value })
+                        }
+                      />
+                    </Form.Group>
+                  </div>
+                </div>
+                <div className="row">
+                  <div className="col-md-6">
+                    <Form.Group className="mb-2">
+                      <Form.Label>Postal Code</Form.Label>
+                      <Form.Control
+                        type="text"
+                        value={newAddress.postal_code}
+                        onChange={(e) =>
+                          setNewAddress({ ...newAddress, postal_code: e.target.value })
+                        }
+                      />
+                    </Form.Group>
+                  </div>
+                  <div className="col-md-6">
+                    <Form.Group className="mb-2">
+                      <Form.Label>Country</Form.Label>
+                      <Form.Control
+                        type="text"
+                        value={newAddress.country}
+                        onChange={(e) =>
+                          setNewAddress({ ...newAddress, country: e.target.value })
+                        }
+                      />
+                    </Form.Group>
+                  </div>
+                </div>
 
-          {addresses.length > 0 ? (
-            <>
-              <Form.Group className="mb-3">
-                <Form.Select
-                  value={selectedBilling || ""}
-                  onChange={(e) => setSelectedBilling(e.target.value)}
-                >
-                  <option value="">Select Billing Address</option>
-                  {addresses.map((addr) => (
-                    <option key={addr.id} value={addr.id}>
-                      {addr.type} - {addr.city}, {addr.state}
-                    </option>
-                  ))}
-                </Form.Select>
-              </Form.Group>
-              <Button
-                variant="outline-success"
-                size="sm"
-                onClick={() => {
-                  setShowNewAddressForm(true);
-                  setAddressContext("billing");
-                }}
-              >
-                ➕ Add New Billing Address
-              </Button>
-            </>
-          ) : (
-            <div className="text-center">
-              <p>No addresses found.</p>
-              <Button
-                variant="outline-success"
-                size="sm"
-                onClick={() => {
-                  setShowNewAddressForm(true);
-                  setAddressContext("billing");
-                }}
-              >
-                ➕ Add Address
-              </Button>
+                <Form.Check
+                  type="checkbox"
+                  label="Set as default"
+                  checked={newAddress.is_default}
+                  onChange={(e) =>
+                    setNewAddress({ ...newAddress, is_default: e.target.checked })
+                  }
+                />
+
+                <div className="text-end mt-3">
+                  <Button type="submit" variant="success" disabled={savingAddress}>
+                    {savingAddress ? (
+                      <Spinner animation="border" size="sm" />
+                    ) : (
+                      "Save Address"
+                    )}
+                  </Button>
+                </div>
+              </Form>
             </div>
           )}
-        </div>
-      </div>
-    )}
+        </Modal.Body>
 
-    {/* ➕ Add Address Form */}
-    {showNewAddressForm && (
-      <div className="mt-4 border-top pt-3">
-        <h6 className="fw-bold">
-          Add New {addressContext === "shipping" ? "Shipping" : "Billing"} Address
-        </h6>
-        <Form className="mt-3" onSubmit={handleSaveAddress}>
-          <Form.Group className="mb-2">
-            <Form.Label>Type</Form.Label>
-            <Form.Control
-              type="text"
-              value={newAddress.type}
-              onChange={(e) =>
-                setNewAddress({ ...newAddress, type: e.target.value })
+        <Modal.Footer className="d-flex justify-content-between">
+          <Button variant="secondary" onClick={() => setShowAddressModal(false)}>
+            Cancel
+          </Button>
+          <Button
+            variant="success"
+            disabled={!selectedShipping || !selectedBilling}
+            onClick={async () => {
+              try {
+                setShowAddressModal(false);
+
+                // ✅ Start loading (optional)
+                setLoading(true);
+
+                const payload = {
+                  user_id: user.id,
+                  org_id: user.org_id || 1,
+                  shipping_address_id: selectedShipping,
+                  billing_address_id: selectedBilling,
+                  payment_method: "COD", 
+                };
+
+                const res = await axios.post(
+                  "https://neil-backend-1.onrender.com/checkout/create",
+                  payload,
+                  {
+                    headers: {
+                      Authorization: `Bearer ${accessToken}`,
+                      "Content-Type": "application/json",
+                    },
+                  }
+                );
+
+                if (res.data.success) {
+                  alert(`✅ Order placed successfully! Order ID: ${res.data.order_id}`);
+                  // You could also redirect:
+                  navigate(`/orders`);
+                } else {
+                  alert("⚠️ Failed to create order. Please try again.");
+                }
+              } catch (err) {
+                alert(
+                  err.response?.data?.message ||
+                    "❌ Something went wrong while creating your order."
+                );
+              } finally {
+                setLoading(false);
               }
-            />
-          </Form.Group>
-          <Form.Group className="mb-2">
-            <Form.Label>Address Line 1</Form.Label>
-            <Form.Control
-              type="text"
-              value={newAddress.address_line_1}
-              onChange={(e) =>
-                setNewAddress({ ...newAddress, address_line_1: e.target.value })
-              }
-            />
-          </Form.Group>
-          <Form.Group className="mb-2">
-            <Form.Label>Address Line 2</Form.Label>
-            <Form.Control
-              type="text"
-              value={newAddress.address_line_2}
-              onChange={(e) =>
-                setNewAddress({ ...newAddress, address_line_2: e.target.value })
-              }
-            />
-          </Form.Group>
-          <div className="row">
-            <div className="col-md-6">
-              <Form.Group className="mb-2">
-                <Form.Label>City</Form.Label>
-                <Form.Control
-                  type="text"
-                  value={newAddress.city}
-                  onChange={(e) =>
-                    setNewAddress({ ...newAddress, city: e.target.value })
-                  }
-                />
-              </Form.Group>
-            </div>
-            <div className="col-md-6">
-              <Form.Group className="mb-2">
-                <Form.Label>State</Form.Label>
-                <Form.Control
-                  type="text"
-                  value={newAddress.state}
-                  onChange={(e) =>
-                    setNewAddress({ ...newAddress, state: e.target.value })
-                  }
-                />
-              </Form.Group>
-            </div>
-          </div>
-          <div className="row">
-            <div className="col-md-6">
-              <Form.Group className="mb-2">
-                <Form.Label>Postal Code</Form.Label>
-                <Form.Control
-                  type="text"
-                  value={newAddress.postal_code}
-                  onChange={(e) =>
-                    setNewAddress({ ...newAddress, postal_code: e.target.value })
-                  }
-                />
-              </Form.Group>
-            </div>
-            <div className="col-md-6">
-              <Form.Group className="mb-2">
-                <Form.Label>Country</Form.Label>
-                <Form.Control
-                  type="text"
-                  value={newAddress.country}
-                  onChange={(e) =>
-                    setNewAddress({ ...newAddress, country: e.target.value })
-                  }
-                />
-              </Form.Group>
-            </div>
-          </div>
+            }}
+          >
+            {loading ? (
+              <Spinner animation="border" size="sm" />
+            ) : (
+              "Confirm & Place Order"
+            )}
+          </Button>
+        </Modal.Footer>
+      </Modal>
 
-          <Form.Check
-            type="checkbox"
-            label="Set as default"
-            checked={newAddress.is_default}
-            onChange={(e) =>
-              setNewAddress({ ...newAddress, is_default: e.target.checked })
-            }
-          />
-
-          <div className="text-end mt-3">
-            <Button type="submit" variant="success" disabled={savingAddress}>
-              {savingAddress ? (
-                <Spinner animation="border" size="sm" />
-              ) : (
-                "Save Address"
-              )}
-            </Button>
-          </div>
-        </Form>
-      </div>
-    )}
-  </Modal.Body>
-
-  <Modal.Footer className="d-flex justify-content-between">
-    <Button variant="secondary" onClick={() => setShowAddressModal(false)}>
-      Cancel
-    </Button>
-    <Button
-  variant="success"
-  disabled={!selectedShipping || !selectedBilling}
-  onClick={async () => {
-    try {
-      setShowAddressModal(false);
-
-      // ✅ Start loading (optional)
-      setLoading(true);
-
-      const payload = {
-        user_id: user.id,
-        org_id: user.org_id || 1,
-        shipping_address_id: selectedShipping,
-        billing_address_id: selectedBilling,
-        payment_method: "COD", 
-      };
-
-      const res = await axios.post(
-        "https://neil-backend-1.onrender.com/checkout/create",
-        payload,
-        {
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
-
-      if (res.data.success) {
-        alert(`✅ Order placed successfully! Order ID: ${res.data.order_id}`);
-        // You could also redirect:
-        navigate(`/orders`);
-      } else {
-        alert("⚠️ Failed to create order. Please try again.");
-      }
-    } catch (err) {
-      alert(
-        err.response?.data?.message ||
-          "❌ Something went wrong while creating your order."
-      );
-    } finally {
-      setLoading(false);
-    }
-  }}
->
-  {loading ? (
-    <Spinner animation="border" size="sm" />
-  ) : (
-    "Confirm & Place Order"
-  )}
-</Button>
-
-  </Modal.Footer>
-</Modal>
-<Footer/>
-    </>
+<Footer style={{ position: "fixed", bottom: 0, left: 0, right: 0, width: "100%" }} />
+    </div>
   );
 }
 
