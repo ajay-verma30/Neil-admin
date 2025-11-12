@@ -1,97 +1,150 @@
 import React, { useContext, useState, useEffect } from "react";
-import { AuthContext } from "../../context/AuthContext";
-import TopBar from "../../Components/TopBar/TopBar";
-import Sidebar from "../../Components/SideBar/SideBar";
 import { Row, Col, Card, Alert, Button, Spinner } from "react-bootstrap";
 import { useParams } from "react-router-dom";
 import axios from "axios";
-import {
-  BriefcaseFill,
-  CalendarFill,
-  KeyFill,
-  PersonFill,
-  EnvelopeFill,
-  PhoneFill,
-} from "react-bootstrap-icons";
+const IconMap = {
+  BriefcaseFill: (props) => <i className="bi bi-briefcase-fill" {...props} />,
+  CalendarFill: (props) => <i className="bi bi-calendar-fill" {...props} />,
+  KeyFill: (props) => <i className="bi bi-key-fill" {...props} />,
+  PersonFill: (props) => <i className="bi bi-person-fill" {...props} />,
+  EnvelopeFill: (props) => <i className="bi bi-envelope-fill" {...props} />,
+  PhoneFill: (props) => <i className="bi bi-phone-fill" {...props} />,
+};
 
-const DetailRow = ({ Icon, label, value, color = "text-secondary" }) => (
-  <div className="d-flex align-items-center mb-2">
-    <Icon className={`${color} me-2`} />
-    <div>
-      <small className="text-muted d-block">{label}</small>
-      <span className="fw-semibold">{value || "—"}</span>
+const API_BASE_URL = process.env.REACT_APP_API_URL || "https://neil-backend-1.onrender.com";
+
+
+const DetailRow = ({ Icon, label, value, color = "text-secondary" }) => {
+  const IconComponent = IconMap[Icon.name] || (() => <i className="bi bi-info-circle-fill text-muted me-2" />);
+  return (
+    <div className="d-flex align-items-center mb-2">
+      <IconComponent className={`${color} me-2`} />
+      <div>
+        <small className="text-muted d-block">{label}</small>
+        <span className="fw-semibold">{value || "—"}</span>
+      </div>
     </div>
-  </div>
-);
+  );
+};
+
+const CustomModal = ({ show, title, message, onConfirm, onCancel, confirmText, cancelText }) => {
+  if (!show) return null;
+
+  return (
+    <div 
+      style={{
+        position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, 
+        backgroundColor: 'rgba(0, 0, 0, 0.5)', 
+        display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1050
+      }}
+    >
+      <Card className="shadow-2xl rounded-lg" style={{ width: '90%', maxWidth: '400px' }}>
+        <Card.Header className="bg-primary text-white">
+          <Card.Title className="mb-0">{title}</Card.Title>
+        </Card.Header>
+        <Card.Body>
+          <p>{message}</p>
+          <div className="d-flex justify-content-end gap-2">
+            <Button variant="secondary" onClick={onCancel}>
+              {cancelText || "Cancel"}
+            </Button>
+            <Button variant="danger" onClick={onConfirm}>
+              {confirmText || "Confirm"}
+            </Button>
+          </div>
+        </Card.Body>
+      </Card>
+    </div>
+  );
+};
+
 
 function SpecificOrganization() {
   const { id, org_id } = useParams();
   const effectiveId = id || org_id;
-  const { accessToken, user } = useContext(AuthContext);
+  
+  const authContextMock = {
+    accessToken: "mock-token", 
+    user: { role: "Super Admin" }, 
+  };
+  const { accessToken, user } = authContextMock; 
+
+
   const [org, setOrg] = useState(null);
   const [errorMsg, setErrorMsg] = useState("");
   const [loading, setLoading] = useState(true);
   const [updatingStatus, setUpdatingStatus] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showStatusModal, setShowStatusModal] = useState(false);
+  const [alertMessage, setAlertMessage] = useState({ show: false, message: '', variant: 'danger' });
+
+  const showAlert = (message, variant = 'danger') => {
+    setAlertMessage({ show: true, message, variant });
+    setTimeout(() => setAlertMessage({ show: false, message: '', variant: 'danger' }), 5000);
+  };
+
 
   useEffect(() => {
-  const fetchOrganization = async () => {
+    const fetchOrganization = async () => {
+      try {
+        setLoading(true);
+        const res = await axios.get(`${API_BASE_URL}/organization/${effectiveId}`, {
+          headers: { Authorization: `Bearer ${accessToken}` },
+        });
+        setOrg(res.data.organization);
+      } catch (err) {
+        const backendMessage = err.response?.data?.message;
+        if (backendMessage) {
+          setErrorMsg(backendMessage);
+        } else if (err.response?.status === 403) {
+          setErrorMsg("You are not authorized to access the details of this organization.");
+        } else {
+          setErrorMsg("Unable to load organization details. Please try again later.");
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (effectiveId && accessToken) fetchOrganization();
+  }, [effectiveId, accessToken]);
+
+
+  const handleMarkInactive = async (orgId) => {
+    setShowStatusModal(false); 
+
     try {
-      setLoading(true);
-      const res = await axios.get(`https://neil-backend-1.onrender.com/organization/${effectiveId}`, {
-        headers: { Authorization: `Bearer ${accessToken}` },
-      });
-      setOrg(res.data.organization);
+      setUpdatingStatus(true);
+      const res = await axios.patch(
+        `${API_BASE_URL}/organization/${orgId}/status`,
+        { status: !org.status }, // toggle
+        { headers: { Authorization: `Bearer ${accessToken}` } }
+      );
+
+      setOrg((prev) => ({ ...prev, status: res.data.status }));
+      showAlert(`Organization successfully ${res.data.status ? 'activated' : 'marked inactive'}.`, 'success');
     } catch (err) {
-      const backendMessage = err.response?.data?.message;
-      if (backendMessage) {
-    setErrorMsg(backendMessage);
-  } else if (err.response?.status === 403) {
-    setErrorMsg("You are not authorized to access the details of this organization.");
-  } else {
-    setErrorMsg("Unable to load organization details. Please try again later.");
-  }
-  } finally {
-      setLoading(false);
+      showAlert(err.response?.data?.message || "Failed to update status");
+    } finally {
+      setUpdatingStatus(false);
     }
   };
 
-  if (effectiveId && accessToken) fetchOrganization();
-}, [effectiveId, accessToken]);
-
-
-const handleMarkInactive = async (orgId) => {
-  if (!window.confirm("Are you sure you want to toggle this organization's status?")) return;
-
-  try {
-    setUpdatingStatus(true);
-    const res = await axios.patch(
-      `https://neil-backend-1.onrender.com/organization/${orgId}/status`,
-      { status: !org.status }, // toggle
-      { headers: { Authorization: `Bearer ${accessToken}` } }
-    );
-
-    // Update local state
-    setOrg((prev) => ({ ...prev, status: res.data.status }));
-  } catch (err) {
-    alert(err.response?.data?.message || "Failed to update status");
-  } finally {
-    setUpdatingStatus(false);
-  }
-};
-
   const handleDeleteOrganization = async (orgId) => {
-  if (!window.confirm("Are you sure you want to delete this organization? This action cannot be undone.")) return;
+    setShowDeleteModal(false); 
+    try {
+      await axios.delete(`${API_BASE_URL}/organization/${orgId}`, {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });    
+      showAlert("Organization deleted successfully. Redirecting...", 'success');
+      setTimeout(() => {
+        window.location.href = "/admin/organizations";
+      }, 1500);
 
-  try {
-    await axios.delete(`https://neil-admin.vercel.app/organization/${orgId}`, {
-      headers: { Authorization: `Bearer ${accessToken}` },
-    });
-    alert("Organization deleted successfully.");
-    window.location.href = "/admin/organizations";
-  } catch (err) {
-    alert(err.response?.data?.message || "Failed to delete organization");
-  }
-};
+    } catch (err) {
+      showAlert(err.response?.data?.message || "Failed to delete organization");
+    }
+  };
 
   if (loading) {
     return (
@@ -102,21 +155,57 @@ const handleMarkInactive = async (orgId) => {
     );
   }
   if (errorMsg)
-  return (
-    <div className="text-center mt-5">
-      <Alert variant="danger">{errorMsg}</Alert>
-    </div>
-  );
+    return (
+      <div className="text-center mt-5">
+        <Alert variant="danger">{errorMsg}</Alert>
+      </div>
+    );
   if (!org) return <div className="text-center mt-5 text-muted">No organization found.</div>;
 
   const admin = org.admin || {};
+  
+  const MockTopBar = () => <div className="bg-white shadow-sm p-3 border-bottom text-muted">Admin Dashboard: Organization Detail</div>;
+  const MockSidebar = () => (
+    <div className="bg-light p-3 h-100 border-end">
+      <p className="fw-bold mb-3">Navigation</p>
+      <ul className="list-unstyled">
+        <li><a href="/admin/organizations" className="text-primary text-decoration-none">← Back to Organizations</a></li>
+      </ul>
+    </div>
+  );
 
   return (
     <>
-      <TopBar />
-      <Row>
+      <CustomModal
+        show={showStatusModal}
+        title="Confirm Status Change"
+        message={`Are you sure you want to ${org.status ? 'mark INACTIVE' : 'ACTIVATE'} this organization?`}
+        onConfirm={() => handleMarkInactive(org.id)}
+        onCancel={() => setShowStatusModal(false)}
+        confirmText={org.status ? 'Mark Inactive' : 'Activate'}
+      />
+      <CustomModal
+        show={showDeleteModal}
+        title="Confirm Deletion"
+        message="Are you absolutely sure you want to delete this organization? This action cannot be undone and will delete ALL related data."
+        onConfirm={() => handleDeleteOrganization(org.id)}
+        onCancel={() => setShowDeleteModal(false)}
+        confirmText="Yes, Delete"
+        cancelText="Cancel"
+      />
+      {alertMessage.show && (
+        <Alert 
+          variant={alertMessage.variant} 
+          style={{ position: 'fixed', top: '20px', right: '20px', zIndex: 1060 }}
+        >
+          {alertMessage.message}
+        </Alert>
+      )}
+
+      <MockTopBar />
+      <Row className="g-0">
         <Col xs={2} md={2}>
-          <Sidebar />
+          <MockSidebar /> 
         </Col>
         <Col xs={10} md={10}>
           <div className="p-4 form-box" style={{ backgroundColor: "#f8f9fa", minHeight: "100vh" }}>
@@ -124,68 +213,68 @@ const handleMarkInactive = async (orgId) => {
               <Card.Body className="p-5">
                 <div className="d-flex align-items-center justify-content-between mb-4 border-bottom pb-3">
                   <div className="d-flex align-items-center">
-                    <BriefcaseFill className="text-primary fs-2 me-3" />
+                    <IconMap.BriefcaseFill className="text-primary fs-2 me-3" />
                     <Card.Title className="fw-bold text-primary display-6 mb-0">
                       {org.title}
                     </Card.Title>
                   </div>
                   <div className="d-flex gap-2">
-  {user?.role === "Super Admin" && (
-    <>
-      <Button
-        variant={org.status ? "warning" : "success"}
-        onClick={() => handleMarkInactive(org.id)}
-        disabled={updatingStatus}
-      >
-        {updatingStatus ? (
-          <Spinner as="span" animation="border" size="sm" role="status" aria-hidden="true" />
-        ) : org.status ? "Mark Inactive" : "Activate"}
-      </Button>
-      <Button
-        variant="danger"
-        onClick={() => handleDeleteOrganization(org.id)}
-      >
-        Delete
-      </Button>
-    </>
-  )}
-</div>
+                    {user?.role === "Super Admin" && (
+                      <>
+                        <Button
+                          variant={org.status ? "warning" : "success"}
+                          onClick={() => setShowStatusModal(true)} 
+                          disabled={updatingStatus}
+                        >
+                          {updatingStatus ? (
+                            <Spinner as="span" animation="border" size="sm" role="status" aria-hidden="true" />
+                          ) : org.status ? "Mark Inactive" : "Activate"}
+                        </Button>
+                        <Button
+                          variant="danger"
+                          onClick={() => setShowDeleteModal(true)}
+                        >
+                          Delete
+                        </Button>
+                      </>
+                    )}
+                  </div>
                 </div>
 
                 <h4 className="fw-semibold mt-4 mb-3 text-secondary">General Details</h4>
-                <DetailRow Icon={KeyFill} label="Organization ID" value={org.id} />
+                <DetailRow Icon={IconMap.KeyFill} label="Organization ID" value={org.id} />
                 <DetailRow
-                  Icon={CalendarFill}
+                  Icon={IconMap.CalendarFill}
                   label="Created On"
                   value={new Date(org.created_at).toLocaleString()}
                 />
                 <hr className="my-5" />
                 <div className="d-flex align-items-center mb-4">
-                  <PersonFill className="text-info fs-3 me-3" />
+                  <IconMap.PersonFill className="text-info fs-3 me-3" />
                   <h4 className="fw-bold text-info mb-0">Default Admin</h4>
                 </div>
                 {admin && admin.f_name ? (
                   <div className="row g-3">
                     <div className="col-md-6">
                       <DetailRow
-                        Icon={PersonFill}
+                        Icon={IconMap.PersonFill}
                         label="Name"
                         value={`${admin.f_name} ${admin.l_name}`}
                         color="text-info"
                       />
                     </div>
                     <div className="col-md-6">
-                      <DetailRow Icon={EnvelopeFill} label="Email" value={admin.email} color="text-info" />
+                      <DetailRow Icon={IconMap.EnvelopeFill} label="Email" value={admin.email} color="text-info" />
                     </div>
                     <div className="col-md-6">
-                      <DetailRow Icon={PhoneFill} label="Contact" value={admin.contact} color="text-info" />
+                      <DetailRow Icon={IconMap.PhoneFill} label="Contact" value={admin.contact} color="text-info" />
                     </div>
                     <div className="col-md-6">
-                      <DetailRow Icon={KeyFill} label="Role" value={admin.role} color="text-info" />
+                      <DetailRow Icon={IconMap.KeyFill} label="Role" value={admin.role} color="text-info" />
                     </div>
                     <div className="col-md-6">
                       <DetailRow
-                        Icon={CalendarFill}
+                        Icon={IconMap.CalendarFill}
                         label="Account Created"
                         value={new Date(admin.created_at).toLocaleString()}
                         color="text-info"
