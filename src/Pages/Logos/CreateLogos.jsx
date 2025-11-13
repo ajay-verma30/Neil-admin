@@ -5,7 +5,6 @@ import Sidebar from "../../Components/SideBar/SideBar";
 import { AuthContext } from "../../context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
-// nanoid is imported but not used in this file's logic, keeping the import for now
 
 function CreateLogos() {
     const { accessToken, user } = useContext(AuthContext);
@@ -26,7 +25,6 @@ function CreateLogos() {
     const [success, setSuccess] = useState(null);
 
     const PLACEMENT_OPTIONS = {
-        // ... (Placement options remain the same)
         tshirt: [
             "Front Chest",
             "Left Chest",
@@ -47,12 +45,34 @@ function CreateLogos() {
             "Left Sleeve",
             "Right Sleeve"
         ],
-        bottle: ["Front"],
-        stationery: ["Front"],
-        cap: ["Front Top"]
+        cap: [
+        "Front Center",
+        "Left Side Panel",
+        "Right Side Panel",
+        "Back"
+    ],
+    mug: [
+        "Front Center",
+        "Left of Handle",
+        "Right of Handle",
+        "Full Wrap"
+    ],
+    bottle: [
+        "Front Center",
+        "Back Center",
+        "Full Wrap"
+    ],
+    stationery: [ 
+        "Front Top Center",
+        "Front Bottom Center",
+        "Back Center"
+    ],
+    pen: [
+        "Barrel (Horizontal)",
+        "Clip"
+    ]
     };
 
-    // 1. Fetch Organizations on component mount (Only for Super Admins)
     useEffect(() => {
         const fetchOrganizations = async () => {
             if (user?.role !== "Super Admin" || !accessToken) return;
@@ -64,12 +84,10 @@ function CreateLogos() {
                     { headers: { Authorization: `Bearer ${accessToken}` } }
                 );
                 
-                // Assuming res.data.organizations contains the list of { id, title }
                 setOrganizations(res.data.organizations || []);
 
             } catch (err) {
                 console.error("Error fetching organizations:", err);
-                // Non-critical error, just show the message but allow form to load
                 setError("Failed to load organizations for dropdown.");
             } finally {
                 setFetchingOrgs(false);
