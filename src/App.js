@@ -3,6 +3,8 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { useContext, useState, useEffect } from 'react';
 import {  AuthContext } from '../src/context/AuthContext';
 import ProtectedRoute from './routes/ProtectedRoute';
+import { Elements } from '@stripe/react-stripe-js';
+import { loadStripe } from '@stripe/stripe-js';
 
 import Login from './Login/Login';
 import RegisterOrganization from './Register/RegisterOrganization';
@@ -32,10 +34,13 @@ import MyProfile from './Users/MyProfile';
 import MyProfile1 from './Pages/Users/MyProfile';
 import { AllProviders } from './context/AllProviders';
 import Categories from './Pages/SubCategories/Categories';
+import PaymentPage from './Pages/Users/PaymentPage';
+
+const stripePromise  = loadStripe("pk_test_51STDSEJ0pzVuvwN7FVivbYOUDiwKnNISai4iOAGwdG4CiQspWZYDpQpdMXErA06gPKLRx8jZ2QCdU1oUDWwZ5X4A002VPrPgZ5");
+
 
 function AppRoutes() {
   const { user } = useContext(AuthContext);
-
   return (
     <Routes>
       {/* ---------- PUBLIC ROUTES ---------- */}
@@ -87,6 +92,7 @@ function AppRoutes() {
           <Route path='/:org_id/org_orders' element={<ProtectedRoute><FullOrders /></ProtectedRoute>} />
           <Route path='/:org_id/orders/:id' element={<ProtectedRoute><SpecificOrder /></ProtectedRoute>} />
           <Route path='/:org_id/my-profile' element={<ProtectedRoute><MyProfile1/></ProtectedRoute>}/>
+          <Route path="/payment" element={<ProtectedRoute><PaymentPage /></ProtectedRoute>} />
         </>
       )}
 
@@ -129,9 +135,11 @@ function App() {
   return (
     <div className='App'>
       <AllProviders>
+        <Elements stripe={stripePromise}>
         <Router >
           <AppContent />
         </Router>
+        </Elements>
 </AllProviders>
     </div>
   );

@@ -58,7 +58,7 @@ function MyProfile() {
     city: "",
     state: "",
     postal_code: "",
-    country: "",
+    country: "USA",
     is_default: "",
   });
 
@@ -135,7 +135,6 @@ function MyProfile() {
       city: addr.city,
       state: addr.state,
       postal_code: addr.postal_code,
-      country: addr.country,
       is_default: addr.is_default ? "True" : "False",
     });
     setSelectedAddressId(addr.id);
@@ -526,10 +525,8 @@ function MyProfile() {
                   <Form.Label>Country</Form.Label>
                   <Form.Control
                     name="country"
-                    value={address.country}
-                    onChange={handleChange}
-                    required
-                    placeholder="Country"
+                    value="USA"
+                    readOnly
                   />
                 </Form.Group>
               </Col>

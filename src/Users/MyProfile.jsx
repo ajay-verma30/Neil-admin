@@ -59,7 +59,7 @@ function MyProfile() {
     city: "",
     state: "",
     postal_code: "",
-    country: "",
+    country: "USA",
     is_default: "",
   });
 
@@ -76,7 +76,6 @@ function MyProfile() {
       city: "",
       state: "",
       postal_code: "",
-      country: "",
       is_default: "",
     });
   };
@@ -527,10 +526,8 @@ function MyProfile() {
                   <Form.Label>Country</Form.Label>
                   <Form.Control
                     name="country"
-                    value={address.country}
-                    onChange={handleChange}
-                    required
-                    placeholder="Country"
+                    value="USA"
+                    readOnly
                   />
                 </Form.Group>
               </Col>

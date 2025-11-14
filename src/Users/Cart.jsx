@@ -463,47 +463,33 @@ function Cart() {
             variant="success"
             disabled={!selectedShipping || !selectedBilling}
             onClick={async () => {
-              try {
-                setShowAddressModal(false);
+  try {
+    setShowAddressModal(false);
+    setLoading(true);
+    const pi = await axios.post(
+      "http://localhost:3000/create-payment-intent",
+      {
+        amount: Math.round(subtotal * 100), 
+      }
+    );
 
-                // ✅ Start loading (optional)
-                setLoading(true);
+    const clientSecret = pi.data.clientSecret;
+    navigate("/payment", {
+      state: {
+        clientSecret,
+        subtotal,
+        shipping: selectedShipping,
+        billing: selectedBilling,
+      },
+    });
 
-                const payload = {
-                  user_id: user.id,
-                  org_id: user.org_id || 1,
-                  shipping_address_id: selectedShipping,
-                  billing_address_id: selectedBilling,
-                  payment_method: "COD", 
-                };
+  } catch (err) {
+    alert("❌ Failed to start payment session");
+  } finally {
+    setLoading(false);
+  }
+}}
 
-                const res = await axios.post(
-                  "https://neil-backend-1.onrender.com/checkout/create",
-                  payload,
-                  {
-                    headers: {
-                      Authorization: `Bearer ${accessToken}`,
-                      "Content-Type": "application/json",
-                    },
-                  }
-                );
-
-                if (res.data.success) {
-                  alert(`✅ Order placed successfully! Order ID: ${res.data.order_id}`);
-                  // You could also redirect:
-                  navigate(`/orders`);
-                } else {
-                  alert("⚠️ Failed to create order. Please try again.");
-                }
-              } catch (err) {
-                alert(
-                  err.response?.data?.message ||
-                    "❌ Something went wrong while creating your order."
-                );
-              } finally {
-                setLoading(false);
-              }
-            }}
           >
             {loading ? (
               <Spinner animation="border" size="sm" />
