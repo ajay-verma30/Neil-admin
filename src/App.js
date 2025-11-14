@@ -92,7 +92,7 @@ function AppRoutes() {
           <Route path='/:org_id/org_orders' element={<ProtectedRoute><FullOrders /></ProtectedRoute>} />
           <Route path='/:org_id/orders/:id' element={<ProtectedRoute><SpecificOrder /></ProtectedRoute>} />
           <Route path='/:org_id/my-profile' element={<ProtectedRoute><MyProfile1/></ProtectedRoute>}/>
-          <Route path="/payment" element={<ProtectedRoute><PaymentPage /></ProtectedRoute>} />
+          
         </>
       )}
 
@@ -104,6 +104,7 @@ function AppRoutes() {
           <Route path='/cart' element={<ProtectedRoute><Cart /></ProtectedRoute>} />
           <Route path='/orders' element={<ProtectedRoute><Orders /></ProtectedRoute>} />
           <Route path='/my-profile' element={<ProtectedRoute><MyProfile /></ProtectedRoute>} />
+          <Route path="/payment" element={<ProtectedRoute><PaymentPage /></ProtectedRoute>} />
         </>
       )}
     </Routes>

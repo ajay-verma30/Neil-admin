@@ -151,8 +151,6 @@ function ProductList() {
                     headers: { "Authorization": `Bearer ${accessToken}` }
                 })
                 const catData = res.data.data || [];
-                console.log("🔍 Categories API Response:", catData);
-                console.log("🔍 First category sub_categories:", catData[0]?.sub_categories);
                 setCategories(catData);
             } catch (e) {
                 console.error("Failed to fetch categories:", e);

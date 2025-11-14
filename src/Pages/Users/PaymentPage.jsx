@@ -15,16 +15,17 @@ function PaymentPage() {
 
   const { clientSecret, subtotal, shipping, billing } = location.state || {};
 
-  if (!clientSecret || !user) {
-    return (
-      <div className="text-center mt-5">
-        <h4>Invalid payment session.</h4>
-        <button className="btn btn-primary mt-3" onClick={() => navigate("/cart")}>
-          Go Back to Cart
-        </button>
-      </div>
-    );
-  }
+  if (!location.state || !location.state.clientSecret) {
+  return (
+    <div className="text-center mt-5">
+      <h4>Invalid payment session. Please return to cart.</h4>
+      <button className="btn btn-primary mt-3" onClick={() => navigate("/cart")}>
+        Back to Cart
+      </button>
+    </div>
+  );
+}
+
 
   const handlePayment = async (e) => {
     e.preventDefault();
