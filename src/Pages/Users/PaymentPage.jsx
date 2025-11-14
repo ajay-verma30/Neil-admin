@@ -11,12 +11,11 @@ function PaymentPage() {
   const location = useLocation();
   const stripe = useStripe();
   const elements = useElements();
-
   const [processing, setProcessing] = useState(false);
 
-  const { clientSecret, shipping, billing, subtotal } = location.state || {};
+  const { clientSecret, subtotal, shipping, billing } = location.state || {};
 
-  if (!clientSecret) {
+  if (!clientSecret || !user) {
     return (
       <div className="text-center mt-5">
         <h4>Invalid payment session.</h4>
@@ -33,20 +32,15 @@ function PaymentPage() {
 
     const card = elements.getElement(CardElement);
 
-    const result = await stripe.confirmCardPayment(clientSecret, {
-      payment_method: {
-        card,
-      },
-    });
+    try {
+      const result = await stripe.confirmCardPayment(clientSecret, {
+        payment_method: { card },
+      });
 
-    if (result.error) {
-      alert(result.error.message);
-      setProcessing(false);
-      return;
-    }
+      if (result.error) throw new Error(result.error.message);
 
-    if (result.paymentIntent.status === "succeeded") {
-      try {
+      if (result.paymentIntent.status === "succeeded") {
+        // Payment succeeded → create order on backend
         const res = await axios.post(
           "https://neil-backend-1.onrender.com/checkout/create",
           {
@@ -69,16 +63,17 @@ function PaymentPage() {
         } else {
           alert("Order creation failed even though payment succeeded!");
         }
-      } catch (err) {
-        alert("Order error (payment succeeded but DB failed). Contact support.");
       }
+    } catch (err) {
+      alert(err.message || "Payment failed");
+    } finally {
+      setProcessing(false);
     }
   };
 
   return (
     <div className="container mt-5 pt-5" style={{ maxWidth: "500px" }}>
       <h3 className="text-center mb-4">Complete Your Payment</h3>
-
       <div className="card p-4 shadow">
         <p className="fw-bold mb-1">Amount to Pay:</p>
         <h4 className="text-success mb-4">${subtotal?.toFixed(2)}</h4>
@@ -88,10 +83,7 @@ function PaymentPage() {
             <CardElement options={{ hidePostalCode: true }} />
           </div>
 
-          <button
-            className="btn btn-primary w-100"
-            disabled={!stripe || processing}
-          >
+          <button className="btn btn-primary w-100" disabled={!stripe || processing}>
             {processing ? "Processing..." : "Pay Now"}
           </button>
         </form>
@@ -99,5 +91,6 @@ function PaymentPage() {
     </div>
   );
 }
+
 
 export default PaymentPage;

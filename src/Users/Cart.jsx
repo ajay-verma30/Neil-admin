@@ -460,43 +460,44 @@ function Cart() {
             Cancel
           </Button>
           <Button
-            variant="success"
-            disabled={!selectedShipping || !selectedBilling}
-            onClick={async () => {
-  try {
-    setShowAddressModal(false);
-    setLoading(true);
-    const pi = await axios.post(
-      "https://neil-backend-1.onrender.com/create-payment-intent",
-      {
-        amount: Math.round(subtotal * 100), 
-      }
-    );
+  variant="success"
+  disabled={!selectedShipping || !selectedBilling}
+  onClick={async () => {
+    try {
+      setShowAddressModal(false);
+      setLoading(true);
 
-    const clientSecret = pi.data.clientSecret;
-    navigate("/payment", {
-      state: {
-        clientSecret,
-        subtotal,
-        shipping: selectedShipping,
-        billing: selectedBilling,
-      },
-    });
+      // 1️⃣ Request clientSecret from backend
+      const pi = await axios.post(
+        "https://neil-backend-1.onrender.com/create-payment-intent",
+        { amount: Math.round(subtotal * 100) } // in cents
+      );
 
-  } catch (err) {
-    alert("❌ Failed to start payment session");
-  } finally {
-    setLoading(false);
-  }
-}}
+      const clientSecret = pi.data.clientSecret;
 
-          >
-            {loading ? (
-              <Spinner animation="border" size="sm" />
-            ) : (
-              "Confirm & Place Order"
-            )}
-          </Button>
+      // 2️⃣ Navigate to /payment with clientSecret + addresses
+      navigate("/payment", {
+        state: {
+          clientSecret,
+          subtotal,
+          shipping: selectedShipping,
+          billing: selectedBilling,
+        },
+      });
+    } catch (err) {
+      alert("❌ Failed to start payment session");
+    } finally {
+      setLoading(false);
+    }
+  }}
+>
+  {loading ? (
+    <Spinner animation="border" size="sm" />
+  ) : (
+    "Confirm & Place Order"
+  )}
+</Button>
+
         </Modal.Footer>
       </Modal>
 
