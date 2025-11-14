@@ -48,7 +48,7 @@ function PaymentPage() {
     if (result.paymentIntent.status === "succeeded") {
       try {
         const res = await axios.post(
-          "http://localhost:3000/checkout/create",
+          "https://neil-backend-1.onrender.com/checkout/create",
           {
             user_id: user.id,
             org_id: user.org_id || 1,
