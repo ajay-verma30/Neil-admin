@@ -467,7 +467,7 @@ function Cart() {
     setShowAddressModal(false);
     setLoading(true);
     const pi = await axios.post(
-      "http://localhost:3000/create-payment-intent",
+      "https://neil-backend-1.onrender.com/create-payment-intent",
       {
         amount: Math.round(subtotal * 100), 
       }
