@@ -37,7 +37,7 @@ function PaymentPage() {
     if (result.error) throw new Error(result.error.message);
 
     if (result.paymentIntent.status === "succeeded") {
-      // ✅ Payment succeeded → create order
+
       const res = await axios.post(
         "https://neil-backend-1.onrender.com/checkout/create",
         {
@@ -45,6 +45,7 @@ function PaymentPage() {
           org_id: user.org_id || 1,
           shipping_address_id: shipping,
           billing_address_id: billing,
+          payment_status:"Paid",
           payment_method: "STRIPE",
           stripe_payment_id: result.paymentIntent.id,
           amount: subtotal,
