@@ -15,62 +15,57 @@ function PaymentPage() {
 
   const { clientSecret, subtotal, shipping, billing } = location.state || {};
 
-  if (!location.state || !location.state.clientSecret) {
+ if (!location.state || !location.state.clientSecret) {
   return (
     <div className="text-center mt-5">
-      <h4>Invalid payment session. Please return to cart.</h4>
-      <button className="btn btn-primary mt-3" onClick={() => navigate("/cart")}>
-        Back to Cart
-      </button>
+      <h4>Invalid payment session. Redirecting you back to cart...</h4>
+      {setTimeout(() => navigate("/cart"), 2000)}
     </div>
   );
 }
 
 
+
   const handlePayment = async (e) => {
-    e.preventDefault();
-    setProcessing(true);
+  e.preventDefault();
+  setProcessing(true);
 
-    const card = elements.getElement(CardElement);
+  const card = elements.getElement(CardElement);
+  try {
+    const result = await stripe.confirmCardPayment(clientSecret, { payment_method: { card } });
 
-    try {
-      const result = await stripe.confirmCardPayment(clientSecret, {
-        payment_method: { card },
-      });
+    if (result.error) throw new Error(result.error.message);
 
-      if (result.error) throw new Error(result.error.message);
+    if (result.paymentIntent.status === "succeeded") {
+      // ✅ Payment succeeded → create order
+      const res = await axios.post(
+        "https://neil-backend-1.onrender.com/checkout/create",
+        {
+          user_id: user.id,
+          org_id: user.org_id || 1,
+          shipping_address_id: shipping,
+          billing_address_id: billing,
+          payment_method: "STRIPE",
+          stripe_payment_id: result.paymentIntent.id,
+          amount: subtotal,
+        },
+        { headers: { Authorization: `Bearer ${accessToken}` } }
+      );
 
-      if (result.paymentIntent.status === "succeeded") {
-        // Payment succeeded → create order on backend
-        const res = await axios.post(
-          "https://neil-backend-1.onrender.com/checkout/create",
-          {
-            user_id: user.id,
-            org_id: user.org_id || 1,
-            shipping_address_id: shipping,
-            billing_address_id: billing,
-            payment_method: "STRIPE",
-            stripe_payment_id: result.paymentIntent.id,
-            amount: subtotal,
-          },
-          {
-            headers: { Authorization: `Bearer ${accessToken}` },
-          }
-        );
-
-        if (res.data.success) {
-          alert("Payment successful! Order created.");
-          navigate("/orders");
-        } else {
-          alert("Order creation failed even though payment succeeded!");
-        }
+      if (res.data.success) {
+        alert("Payment successful! Order created.");
+        navigate("/orders");
+      } else {
+        alert("Order creation failed even though payment succeeded!");
       }
-    } catch (err) {
-      alert(err.message || "Payment failed");
-    } finally {
-      setProcessing(false);
     }
-  };
+  } catch (err) {
+    alert(err.message || "Payment failed");
+  } finally {
+    setProcessing(false);
+  }
+};
+
 
   return (
     <div className="container mt-5 pt-5" style={{ maxWidth: "500px" }}>
