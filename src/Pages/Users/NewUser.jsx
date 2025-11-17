@@ -176,6 +176,8 @@ function NewUser() {
               </Row>
 
               {/* ORGANIZATION ID LOGIC */}
+              <Row>
+                <Col xs={12} md={3}>
               <Form.Group className="mb-3">
                 <Form.Label>Organization ID</Form.Label>
                 <Form.Control
@@ -198,6 +200,8 @@ function NewUser() {
                   </Form.Text>
                 )}
               </Form.Group>
+              </Col>
+              </Row>
 
               <Button variant="primary" type="submit" disabled={loading}>
                 {loading ? (
