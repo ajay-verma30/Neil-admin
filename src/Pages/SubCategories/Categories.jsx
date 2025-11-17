@@ -15,7 +15,7 @@ import {
 import axios from "axios";
 import { AuthContext } from "../../context/AuthContext";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faTrash, faPlus } from "@fortawesome/free-solid-svg-icons";
+import { faTrash, faPlus,faPencil  } from "@fortawesome/free-solid-svg-icons";
 
 const OverlayCard = ({ children }) => (
   <div
@@ -32,6 +32,7 @@ function Categories() {
   const { accessToken, user } = useContext(AuthContext);
   const [categories, setCategories] = useState([]);
   const [organizations, setOrganizations] = useState([]);
+  const [editingCategory, setEditingCategory] = useState(null);
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -153,6 +154,43 @@ function Categories() {
     }
   };
 
+
+  const handleEditClick = (category) => {
+  setEditingCategory(category);
+  setNewCategory({ 
+    title: category.title, 
+    org_id: category.org_id || "" 
+  });
+  setShowModal(true);
+};
+
+
+const handleEditSubmit = async (e) => {
+  e.preventDefault();
+  if (!newCategory.title || (user.role === "Super Admin" && newCategory.org_id === "")) {
+    return setError("Please fill in all required fields.");
+  }
+
+  setSubmitting(true);
+  try {
+    const res = await axios.patch(
+      `https://neil-backend-1.onrender.com/categories/update/${editingCategory.id}`,
+      newCategory,
+      { headers: { Authorization: `Bearer ${accessToken}` } }
+    );
+
+    setSuccess("Category updated successfully!");
+    setShowModal(false);
+    setEditingCategory(null);
+    setNewCategory({ title: "", org_id: "" });
+    fetchCategories();
+  } catch (err) {
+    console.error(err);
+    setError(err.response?.data?.message || "Failed to update category.");
+  } finally {
+    setSubmitting(false);
+  }
+};
   return (
     <>
       <TopBar />
@@ -270,6 +308,13 @@ function Categories() {
                             <td>{new Date(cat.created_at).toLocaleString()}</td>
                             <td className="text-end">
                               <Button
+    variant="link"
+    className="p-0 text-primary me-2"
+    onClick={() => handleEditClick(cat)}
+  >
+    <FontAwesomeIcon icon={faPencil} />
+  </Button>
+                              <Button
                                 variant="link"
                                 className="p-0 text-danger"
                                 onClick={() => handleDelete(cat.id)}
@@ -293,42 +338,43 @@ function Categories() {
               <Modal.Title>Add New Category</Modal.Title>
             </Modal.Header>
             <Modal.Body>
-              <Form onSubmit={handleSubmit}>
-                <Form.Group className="mb-3">
-                  <Form.Label>Category Title</Form.Label>
-                  <Form.Control
-                    type="text"
-                    name="title"
-                    value={newCategory.title}
-                    onChange={handleChange}
-                    placeholder="Enter category title"
-                    required
-                  />
-                </Form.Group>
+              <Form onSubmit={editingCategory ? handleEditSubmit : handleSubmit}>
+  <Form.Group className="mb-3">
+    <Form.Label>Category Title</Form.Label>
+    <Form.Control
+      type="text"
+      name="title"
+      value={newCategory.title}
+      onChange={handleChange}
+      placeholder="Enter category title"
+      required
+    />
+  </Form.Group>
 
-                {user.role === "Super Admin" && (
-                  <Form.Group className="mb-3">
-                    <Form.Label>Organization</Form.Label>
-                    <Form.Select
-                      name="org_id"
-                      value={newCategory.org_id}
-                      onChange={handleChange}
-                      required
-                    >
-                      <option value="">Select Organization</option>
-                      {organizations.map((org) => (
-                        <option key={org.id} value={org.id}>
-                          {org.title}
-                        </option>
-                      ))}
-                    </Form.Select>
-                  </Form.Group>
-                )}
+  {user.role === "Super Admin" && (
+    <Form.Group className="mb-3">
+      <Form.Label>Organization</Form.Label>
+      <Form.Select
+        name="org_id"
+        value={newCategory.org_id}
+        onChange={handleChange}
+        required
+      >
+        <option value="">Select Organization</option>
+        {organizations.map((org) => (
+          <option key={org.id} value={org.id}>
+            {org.title}
+          </option>
+        ))}
+      </Form.Select>
+    </Form.Group>
+  )}
 
-                <Button variant="primary" type="submit" disabled={submitting}>
-                  {submitting ? "Saving..." : "Add Category"}
-                </Button>
-              </Form>
+  <Button variant="primary" type="submit" disabled={submitting}>
+    {submitting ? "Saving..." : editingCategory ? "Update Category" : "Add Category"}
+  </Button>
+</Form>
+
             </Modal.Body>
           </Modal>
         </Col>
