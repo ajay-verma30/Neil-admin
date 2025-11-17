@@ -38,6 +38,15 @@ function NewUser() {
     setLoading(true);
     try {
       const payload = { ...formData };
+       const numberPattern = /^(?:\+1\s?)?(?:\([2-9]\d{2}\)|[2-9]\d{2})[\s.-]?[2-9]\d{2}[\s.-]?\d{4}$/;
+        if (!numberPattern.test(payload.contact)) {
+      setAlert({
+        type: "danger",
+        message: "Please enter correct mobile number",
+      });
+      setLoading(false);
+      return;
+    }
       const res = await axios.post(
         "https://neil-backend-1.onrender.com/users/new",
         payload,

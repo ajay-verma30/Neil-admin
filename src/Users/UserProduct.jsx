@@ -166,27 +166,11 @@ function UserProduct() {
       return;
     }
 
-    // --- START OF MODIFICATION ---
-    // Make logo/placement optional by REMOVING this validation block:
-    /*
-    if (!selectedPlacementIds || selectedPlacementIds.length === 0) {
-        setMessage("⚠️ Please select at least one logo placement before adding to cart.");
-        setIsProcessing(false);
-        return;
-    }
-    */
-    // --- END OF MODIFICATION ---
-    
-    // Determine if we need to show the logo in the preview
     const showLogo = selectedPlacementIds.length > 0 && logoVariant;
 
     try {
       const previewEl = document.getElementById("product-preview-area");
       if (!previewEl) throw new Error("Preview element not found.");
-
-      // If no placement is selected, we might want to temporarily hide the logo elements
-      // or simply rely on html2canvas capturing the current state (which works fine 
-      // since the logo elements won't be rendered if selectedPlacementIds is empty).
       
       const canvas = await html2canvas(previewEl, {
         backgroundColor: null,
@@ -199,9 +183,6 @@ function UserProduct() {
       const formData = new FormData();
       formData.append("user_id", user?.id || "temporary_user");
       formData.append("product_variant_id", selectedVariantId);
-
-      // Pass optional fields, defaulting to an empty string if not selected.
-      // The backend will treat these as NULL if they are empty strings.
       formData.append("logo_variant_id", selectedLogoVariantId || "");
       formData.append("placement_id", selectedPlacementIds[0] || "");
       formData.append("preview", file);
@@ -576,7 +557,6 @@ function UserProduct() {
                 </Button>
               </div>
 
-              {/* Message Alert */}
               {message && (
                 <Alert
                   variant={message.startsWith("✅") ? "success" : "danger"}

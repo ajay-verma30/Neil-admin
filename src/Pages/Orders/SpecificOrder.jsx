@@ -17,31 +17,21 @@ import { AuthContext } from "../../context/AuthContext";
 import axios from "axios";
 import { useParams } from "react-router-dom";
 
-// Helper function to flatten and merge the deeply nested array structure
 const flattenAndMergeOrderItems = (cartItems, customizations) => {
-    // 1. Flatten cartItems (assuming it's an array of arrays: [[{...}], [{...}]] to [{...}, {...}])
     const flattenedCartItems = cartItems.flat();
-
-    // 2. The customizations array is already flat, but we'll use a map for safe lookup.
-    // The customization object is now rich with product, logo, and placement details.
     const customizationMap = customizations.reduce((acc, curr) => {
-        // Use the customization_id from the backend response
         if (curr && curr.customization_id) {
             acc[curr.customization_id] = curr;
         }
         return acc;
     }, {});
 
-    // 3. Merge cart items with their corresponding customization details
     return flattenedCartItems.map(item => {
-        // item.customizations_id links cart_items to the customization details
         const customization = customizationMap[item.customizations_id] || {};
         
         return {
-            ...item, // All cart_items fields (id, title, image, quantity, total_price, etc.)
-            // Merge all the rich customization details directly onto the cart item object
+            ...item,
             ...customization,
-            // Ensure no ID collision for primary keys, keeping cart_item_id explicit
             cart_item_id: item.id, 
             customization_id: customization.customization_id || item.customizations_id, 
         };
@@ -54,7 +44,7 @@ function SpecificOrder() {
     const { id } = useParams();
 
     const [order, setOrder] = useState(null);
-    const [orderItems, setOrderItems] = useState([]); // State for combined item details
+    const [orderItems, setOrderItems] = useState([]); 
     const [loading, setLoading] = useState(false);
     const [errMsg, setErrMsg] = useState("");
     const [status, setStatus] = useState("");
@@ -81,13 +71,9 @@ function SpecificOrder() {
                         headers: { Authorization: `Bearer ${accessToken}` },
                     }
                 );
-                const fetchedOrder = res.data.data || res.data;
-                
-                // 1. Set the main order data
+                const fetchedOrder = res.data.data || res.data;                
                 setOrder(fetchedOrder);
                 setStatus(fetchedOrder.status);
-
-                // 2. Process and set the merged order items
                 if (fetchedOrder.cartItems && fetchedOrder.customizations) {
                     const mergedItems = flattenAndMergeOrderItems(
                         fetchedOrder.cartItems,
@@ -95,7 +81,6 @@ function SpecificOrder() {
                     );
                     setOrderItems(mergedItems);
                 }
-
             } catch (err) {
                 console.error("Error fetching order:", err);
                 setErrMsg(
@@ -127,7 +112,7 @@ function SpecificOrder() {
                 ...prev,
                 status,
             }));
-            setNote(''); // Clear note field after successful submission
+            setNote('');
         } catch (err) {
             console.error("Error updating order:", err);
             setErrMsg(err.response?.data?.message || "Failed to update order.");
@@ -135,8 +120,6 @@ function SpecificOrder() {
             setUpdating(false);
         }
     };
-
-    // --- UI RENDERING STARTS HERE ---
     return (
         <>
             <TopBar />
@@ -157,9 +140,6 @@ function SpecificOrder() {
                                 </Alert>
                             ) : order ? (
                                 <>
-                                    {/* Order Header, Admin Controls, Customer Info, Addresses (omitted for brevity, assume unchanged) */}
-                                    
-                                    {/* 🧾 Order Header */}
                                     <Card className="shadow-sm mb-4 border-0">
                                         <Card.Body>
                                             <div className="d-flex justify-content-between align-items-center">
@@ -186,7 +166,6 @@ function SpecificOrder() {
                                         </Card.Body>
                                     </Card>
 
-                                    {/* 🧰 Admin Controls */}
                                     {user?.role === "Super Admin" && (
                                         <Card className="shadow-sm mb-4 border-0">
                                             <Card.Header className="fw-semibold bg-white">
@@ -244,7 +223,6 @@ function SpecificOrder() {
                                         </Card>
                                     )}
 
-                                    {/* 🧍 Customer Info */}
                                     <Card className="shadow-sm mb-4 border-0">
                                         <Card.Header className="fw-semibold bg-white">
                                             Customer Details

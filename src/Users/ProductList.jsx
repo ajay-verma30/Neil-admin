@@ -158,19 +158,12 @@ function ProductList() {
         }
         getCategories();
     }, [accessToken]);
-
-    // --- Filtering Logic ---
-    // This filters by sub_category_title (string) for display purposes
     const filteredProducts = useMemo(() => {
         if (!selectedSubcategory) {
             return products;
         }
-        // The selectedSubcategory is now an ID, but products have sub_category_title
-        // Since we're filtering server-side via ID, just return all products from the API
         return products;
     }, [products, selectedSubcategory]);
-
-    // --- Handlers ---
 
     const toggleCategory = (index) => {
         setExpandedCategory(expandedCategory === index ? null : index);
