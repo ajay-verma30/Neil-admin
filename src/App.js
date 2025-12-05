@@ -35,6 +35,7 @@ import MyProfile1 from './Pages/Users/MyProfile';
 import { AllProviders } from './context/AllProviders';
 import Categories from './Pages/SubCategories/Categories';
 import PaymentPage from './Pages/Users/PaymentPage';
+import Customize from './Pages/Organization/Customize';
 
 const stripePromise  = loadStripe("pk_test_51STDSEJ0pzVuvwN7FVivbYOUDiwKnNISai4iOAGwdG4CiQspWZYDpQpdMXErA06gPKLRx8jZ2QCdU1oUDWwZ5X4A002VPrPgZ5");
 
@@ -55,6 +56,7 @@ function AppRoutes() {
           <Route path='/admin/organizations' element={<ProtectedRoute><Organization /></ProtectedRoute>} />
           <Route path='/admin/new-organization' element={<ProtectedRoute><CreateOrganization /></ProtectedRoute>} />
           <Route path='/admin/organization/:id' element={<ProtectedRoute><SpecificOrganization /></ProtectedRoute>} />
+          <Route path='/admin/organization/:id/customize' element={<ProtectedRoute><Customize /></ProtectedRoute>} />
           <Route path='/admin/users' element={<ProtectedRoute><Users /></ProtectedRoute>} />
           <Route path='/admin/users/:id' element={<ProtectedRoute><SpecificUser /></ProtectedRoute>} />
           <Route path='/admin/users/new' element={<ProtectedRoute><NewUser /></ProtectedRoute>} />

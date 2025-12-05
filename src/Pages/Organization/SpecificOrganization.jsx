@@ -5,6 +5,7 @@ import axios from "axios";
 import { AuthContext } from "../../context/AuthContext";
 import TopBar from "../../Components/TopBar/TopBar";
 import Sidebar from "../../Components/SideBar/SideBar";
+import { useNavigate } from "react-router-dom";
 const IconMap = {
   BriefcaseFill: (props) => <i className="bi bi-briefcase-fill" {...props} />,
   CalendarFill: (props) => <i className="bi bi-calendar-fill" {...props} />,
@@ -65,7 +66,7 @@ const CustomModal = ({ show, title, message, onConfirm, onCancel, confirmText, c
 function SpecificOrganization() {
   const { id, org_id } = useParams();
   const effectiveId = id || org_id;
-  
+  const navigate = useNavigate();
   const { accessToken, user } = useContext(AuthContext); 
 
 
@@ -90,7 +91,7 @@ function SpecificOrganization() {
         const res = await axios.get(`${API_BASE_URL}/organization/${effectiveId}`, {
           headers: { Authorization: `Bearer ${accessToken}` },
         });
-        console.log(res)
+
         setOrg(res.data.organization);
       } catch (err) {
         const backendMessage = err.response?.data?.message;
@@ -145,6 +146,10 @@ function SpecificOrganization() {
       showAlert(err.response?.data?.message || "Failed to delete organization");
     }
   };
+
+  const customizeLink = ()=>{
+    navigate(`/admin/organization/${id}/customize`)
+  }
 
   if (loading) {
     return (
@@ -209,6 +214,7 @@ function SpecificOrganization() {
                   <div className="d-flex gap-2">
                     {user?.role === "Super Admin" && (
                       <>
+                          <Button className="btn btn-info" onClick={customizeLink}>Customize</Button>
                         <Button
                           variant={org.status ? "warning" : "success"}
                           onClick={() => setShowStatusModal(true)} 

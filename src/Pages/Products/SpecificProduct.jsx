@@ -45,8 +45,9 @@ function EditProduct() {
   const [productDetails, setProductDetails] = useState(null); // Base fields: title, sku, price, etc.
   const [currentVariants, setCurrentVariants] = useState([]); // Array of variants (with sizes/attributes)
   const [productImages, setProductImages] = useState([]); // [{id, url, file, isNew}]
-  const [deletedImages, setDeletedImages] = useState([]); // URLs/IDs of images to delete
+  const [deletedImages, setDeletedImages] = useState([]); // URLs/IDs of images to delete (Product Images)
   const [deletedVariants, setDeletedVariants] = useState([]); // IDs of variants to delete
+  const [deletedVariantImages, setDeletedVariantImages] = useState([]); // URLs/IDs of variant images to delete (Variant Images)
 
   const [groups, setGroups] = useState([]);
   const [groupVisibility, setGroupVisibility] = useState([]);
@@ -56,7 +57,8 @@ function EditProduct() {
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const [categories, setCategories] = useState([]);
-const [subCategories, setSubCategories] = useState([]);
+  const [subCategories, setSubCategories] = useState([]);
+
 
   // --- Data Fetching and Initialization ---
 
@@ -88,6 +90,11 @@ const fetchData = useCallback(async () => {
       price: product.price || "",
       actual_price: product.actual_price || "",
     });
+
+    // Reset deletion trackers on successful fetch
+    setDeletedImages([]);
+    setDeletedVariants([]);
+    setDeletedVariantImages([]);
 
     setCurrentVariants((product.variants || []).map((v) => ({ ...v, tempId: v.id })));
     setProductImages((product.images || []).map((img) => ({ ...img, isNew: false })));
@@ -170,15 +177,22 @@ const fetchData = useCallback(async () => {
   };
 
   const deleteVariant = (variantIdToDelete, tempId) => {
-    if (window.confirm("Are you sure you want to delete this variant?")) {
-      // Only add to deletedVariants list if it has an actual DB ID
-      if (variantIdToDelete) {
-        setDeletedVariants((prev) => [...prev, variantIdToDelete]);
+  if (window.confirm("Are you sure you want to delete this variant?")) {
+    const variantToDelete = currentVariants.find(v => v.tempId === tempId);
+    if (variantToDelete) {
+      const imagesToDelete = variantToDelete.images
+        .filter(img => !img.isNew) 
+        .map(img => img.url);
+      if (imagesToDelete.length > 0) {
+        setDeletedVariantImages(prev => [...prev, ...imagesToDelete]);
       }
-      // Filter out from the current list using the tempId
-      setCurrentVariants((prev) => prev.filter((v) => v.tempId !== tempId));
     }
-  };
+    if (variantIdToDelete) {
+      setDeletedVariants((prev) => [...prev, variantIdToDelete]);
+    }
+    setCurrentVariants((prev) => prev.filter((v) => v.tempId !== tempId));
+  }
+};
 
   const addSizeToVariant = (variantTempId) => {
     const newSize = prompt("Enter new size name (e.g., L, XL):");
@@ -283,7 +297,7 @@ const fetchData = useCallback(async () => {
       }
     });
 
-    // 2. Append Deleted Images (URLs)
+    // 2. Append Deleted Product Images (URLs)
     if (deletedImages.length) {
       formData.append("deleted_images", JSON.stringify(deletedImages));
     }
@@ -293,9 +307,17 @@ const fetchData = useCallback(async () => {
       formData.append("deleted_variants", JSON.stringify(deletedVariants));
     }
 
+    // 4. ✅ FIX: Append Deleted Variant Images (URLs)
+    if (deletedVariantImages.length) {
+      formData.append(
+        "deleted_variant_images",
+        JSON.stringify(deletedVariantImages)
+      );
+    }
+    
+    // 5. Append Variant Data Payload
     const variantsPayload = currentVariants.map((v) => {
-      // Find all image files associated with this variant
-      const newVariantImageFiles = v.images.filter((img) => img.isNew);
+      // Find all image files associated with this variant (handled below in step 8)
 
       return {
         id: v.id || null, // Important: ID is null for new variants, or actual ID for existing
@@ -310,7 +332,7 @@ const fetchData = useCallback(async () => {
     });
     formData.append("variants", JSON.stringify(variantsPayload));
 
-    // 5. Append Group Visibility (Replacement logic)
+    // 6. Append Group Visibility (Replacement logic)
     const visibilityPayload = groupVisibility.map(
       ({ group_id, is_visible }) => ({
         group_id,
@@ -319,13 +341,13 @@ const fetchData = useCallback(async () => {
     );
     formData.append("group_visibility", JSON.stringify(visibilityPayload));
 
-    // 6. Append Image Files (New Product Images)
+    // 7. Append Image Files (New Product Images)
     const newProductImageFiles = productImages.filter((img) => img.isNew);
     newProductImageFiles.forEach((img) => {
       formData.append(img.fieldname, img.file); // fieldname is 'productImages'
     });
 
-    // 7. Append Image Files (New Variant Images)
+    // 8. Append Image Files (New Variant Images)
     currentVariants.forEach((v, variantIndex) => {
       v.images
         .filter((img) => img.isNew)
@@ -338,7 +360,7 @@ const fetchData = useCallback(async () => {
         });
     });
 
-    // 8. API Call
+    // 9. API Call
     try {
       const url = `https://neil-backend-1.onrender.com/products/edit/${id}`;
       await axios.patch(url, formData, {
@@ -830,56 +852,105 @@ const fetchData = useCallback(async () => {
                             </div>
 
                             <div className="d-flex flex-wrap gap-3">
-                              {v.images.map((img) => (
-  <div key={img.id} className="position-relative" style={{ width: 100, height: 100 }}>
-    <img
-      src={img.url}
-      alt={img.type}
-      className="rounded border w-100 h-100 object-fit-cover"
-    />
-    
-    {/* Type Selector */}
-    {img.isNew && (
-      <Form.Select
-        size="sm"
-        value={img.type || "front"}
-        onChange={(e) => {
-          const newType = e.target.value;
-          setCurrentVariants((prev) =>
-            prev.map((variant) => {
-              if (variant.tempId === v.tempId) {
-                return {
-                  ...variant,
-                  images: variant.images.map((i) =>
-                    i.id === img.id ? { ...i, type: newType } : i
-                  ),
-                };
+  {v.images.map((img) => (
+    <div
+      key={img.id}
+      className="position-relative"
+      style={{ width: 100, height: 100 }}
+    >
+      <img
+        src={img.url}
+        alt={img.type}
+        className="rounded border w-100 h-100 object-fit-cover"
+      />
+
+      {/* Type Selector for new images */}
+      {img.isNew && (
+        <Form.Select
+          size="sm"
+          value={img.type || "front"}
+          onChange={(e) => {
+            const newType = e.target.value;
+            setCurrentVariants((prev) =>
+              prev.map((variant) => {
+                if (variant.tempId === v.tempId) {
+                  return {
+                    ...variant,
+                    images: variant.images.map((i) =>
+                      i.id === img.id ? { ...i, type: newType } : i
+                    ),
+                  };
+                }
+                return variant;
+              })
+            );
+          }}
+          className="mt-1"
+        >
+          <option value="front">Front</option>
+          <option value="back">Back</option>
+          <option value="left">Left</option>
+          <option value="right">Right</option>
+        </Form.Select>
+      )}
+
+      {/* Delete Button */}
+      <Button
+  variant="danger"
+  size="sm"
+  className="position-absolute top-0 end-0 p-1"
+  onClick={() => {
+    if (img.isNew) {
+      // Delete new image locally
+      setCurrentVariants((prev) =>
+        prev.map((variant) =>
+          variant.tempId === v.tempId
+            ? {
+                ...variant,
+                images: variant.images.filter((i) => i.id !== img.id),
               }
-              return variant;
-            })
-          );
-        }}
-        className="mt-1"
-      >
-        <option value="front">Front</option>
-        <option value="back">Back</option>
-        <option value="left">Left</option>
-        <option value="right">Right</option>
-      </Form.Select>
-    )}
+            : variant
+        )
+      );
+      URL.revokeObjectURL(img.url); // Free memory
+    } else {
+      // Delete existing variant image
+      if (
+        window.confirm(
+          "Are you sure you want to delete this existing variant image?"
+        )
+      ) {
+        setCurrentVariants((prev) =>
+          prev.map((variant) =>
+            variant.tempId === v.tempId
+              ? {
+                  ...variant,
+                  images: variant.images.filter((i) => i.id !== img.id),
+                }
+              : variant
+          )
+        );
+        // FIX: Track the URL for backend deletion
+        setDeletedVariantImages((prev) => [...prev, img.url]); 
+      }
+    }
+  }}
+>
+  <FaTrash size={12} />
+</Button>
 
-    {img.isNew && (
-      <span className="position-absolute top-0 start-0 badge bg-info">NEW</span>
-    )}
-  </div>
-))}
 
-                              {!v.images.length && (
-                                <p className="text-muted">
-                                  No images for this variant.
-                                </p>
-                              )}
-                            </div>
+      {/* Badge for new images */}
+      {img.isNew && (
+        <span className="position-absolute top-0 start-0 badge bg-info">
+          NEW
+        </span>
+      )}
+    </div>
+  ))}
+  {!v.images.length && <p className="text-muted">No images for this variant.</p>}
+</div>
+
 
                             <div className="text-end mt-3 border-top pt-3">
                               <Button
