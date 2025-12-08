@@ -1,4 +1,4 @@
-import React, { useContext } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import { Navbar, Nav, Container, Dropdown,Button } from "react-bootstrap";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
@@ -12,11 +12,36 @@ import { useNavigate } from "react-router-dom";
 import "./TopBar.css";
 import { CartContext } from "../../context/CartContext";
 import { useLocation } from "react-router-dom";
+import axios from "axios";
 
 function TopBar() {
-  const { logout, user } = useContext(AuthContext);
+  const { logout, user, accessToken } = useContext(AuthContext);
   const navigate = useNavigate();
+  const [orgDetails, setOrgDetails] = useState();
   const {cart} =useContext(CartContext);
+  useEffect(() => {
+  if (!user || user.role === "Super Admin") return;
+
+  const getOrgDetails = async () => {
+    try {
+      const response = await axios.get(
+        `https://neil-backend-1.onrender.com/attributes/organization/${user.org_id}/attributes`,
+        {
+          headers: {
+            "Authorization": `Bearer ${accessToken}`,
+          },
+        }
+      );
+      setOrgDetails(response.data.attributes);
+    } catch (err) {
+      console.log(err);
+    }
+  };
+
+  getOrgDetails();
+}, [user, accessToken]);
+
+
 
   const handleLogout = async (e) => {
     e.preventDefault();
@@ -68,12 +93,21 @@ function TopBar() {
     <Navbar bg="white" expand="lg" fixed="top" className="shadow-sm py-2 topbar">
       <Container fluid>
         <Navbar.Brand
-          onClick={handleNavigation}
-          className="fw-bold text-primary"
-          style={{ cursor: "pointer" }}
-        >
-          Neil Prints & Services
-        </Navbar.Brand>
+  onClick={handleNavigation}
+  className="fw-bold text-primary d-flex align-items-center"
+  style={{ cursor: "pointer" }}
+>
+  {orgDetails?.logo ? (
+    <img
+      src={orgDetails.logo}
+      alt="Org Logo"
+      style={{ height: "40px", objectFit: "contain" }}
+    />
+  ) : (
+    "Neil Prints"
+  )}
+</Navbar.Brand>
+
 
         <Navbar.Toggle aria-controls="main-navbar" />
         <Navbar.Collapse id="main-navbar" className="justify-content-end">

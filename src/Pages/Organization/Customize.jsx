@@ -21,36 +21,43 @@ function Customize() {
   const [fetching, setFetching] = useState(true);
   const [message, setMessage] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
+  const [attributesExist, setAttributesExist] = useState(false);
+  const [textAlign, setTextAlign] = useState("center");
 
   // -------------------------------
   // LOAD EXISTING ATTRIBUTES
   // -------------------------------
   
   
-  useEffect(() => {
-    const fetchAttributes = async () => {
-      try {
-        const res = await axios.get(`https://neil-backend-1.onrender.com/attributes/organization/${id}/attributes`, {
-          headers: { Authorization: `Bearer ${accessToken}` },
-        });
+useEffect(() => {
+  const fetchAttributes = async () => {
+    try {
+      const res = await axios.get(
+        `https://neil-backend-1.onrender.com/attributes/organization/${id}/attributes`,
+        { headers: { Authorization: `Bearer ${accessToken}` } }
+      );
 
-        const data = res.data.attributes;
+      const data = res.data.attributes;
 
-        setOrgContext(data.org_context || "");
-        setTextColor(data.text_color || "#000000");
-        setBackgroundColor(data.background_color || "#ffffff");
+      setOrgContext(data.org_context || "");
+      setTextColor(data.text_color || "#000000");
+      setBackgroundColor(data.background_color || "#ffffff");
 
-        if (data.logo) setLogoPreview(data.logo);
-        if (data.org_image) setOrgImagePreview(data.org_image);
-      } catch (err) {
-        console.warn("No existing attributes found:", err.response?.data);
-      } finally {
-        setFetching(false);
-      }
-    };
+      if (data.logo) setLogoPreview(data.logo);
+      if (data.org_image) setOrgImagePreview(data.org_image);
 
-    fetchAttributes();
-  }, [id, accessToken]);
+      setAttributesExist(true); // attributes exist
+    } catch (err) {
+      console.warn("No existing attributes found:", err.response?.data);
+      setAttributesExist(false); // attributes do not exist
+    } finally {
+      setFetching(false);
+    }
+  };
+
+  fetchAttributes();
+}, [id, accessToken]);
+
 
   // -------------------------------
   // FILE PREVIEW HANDLER
@@ -67,22 +74,25 @@ function Customize() {
   // SUBMIT FORM
   // -------------------------------
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setMessage("");
-    setErrorMsg("");
+  e.preventDefault();
+  setLoading(true);
+  setMessage("");
+  setErrorMsg("");
 
-    try {
-      const formData = new FormData();
-      formData.append("org_id", id);
-      formData.append("org_context", orgContext);
-      formData.append("text_color", textColor);
-      formData.append("background_color", backgroundColor);
+  try {
+    const formData = new FormData();
+    formData.append("org_context", orgContext);
+    formData.append("text_color", textColor);
+    formData.append("background_color", backgroundColor);
 
-      if (logoFile) formData.append("logo", logoFile);
-      if (orgImageFile) formData.append("org_image", orgImageFile);
+    if (logoFile) formData.append("logo", logoFile);
+    if (orgImageFile) formData.append("org_image", orgImageFile);
 
-      const res = await axios.post("https://neil-backend-1.onrender.com/attributes/new-attribute",
+    let res;
+    if (attributesExist) {
+      // Use PATCH to update
+      res = await axios.patch(
+        `https://neil-backend-1.onrender.com/attributes/organization/${id}/attributes`,
         formData,
         {
           headers: {
@@ -91,17 +101,30 @@ function Customize() {
           },
         }
       );
-      console.log(res);
-    //   setMessage(res.data.message || "Attributes saved.");
-    } catch (err) {
-      console.error(err);
-      setErrorMsg(
-        err.response?.data?.message || "Something went wrong. Try again."
+      setMessage(res.data.message || "Attributes updated successfully.");
+    } else {
+      // Use POST to create
+      res = await axios.post(
+        "https://neil-backend-1.onrender.com/attributes/new-attribute",
+        formData,
+        {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            "Content-Type": "multipart/form-data",
+          },
+        }
       );
-    } finally {
-      setLoading(false);
+      setMessage(res.data.message || "Attributes created successfully.");
+      setAttributesExist(true); // Now they exist
     }
-  };
+  } catch (err) {
+    console.error(err);
+    setErrorMsg(err.response?.data?.message || "Something went wrong. Try again.");
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   if (fetching) {
     return (
@@ -164,6 +187,18 @@ function Customize() {
                   placeholder="Write context..."
                 />
               </Form.Group>
+              <Form.Group className="mb-3">
+  <Form.Label>Text Alignment</Form.Label>
+  <Form.Select 
+    value={textAlign} 
+    onChange={(e) => setTextAlign(e.target.value)}
+  >
+    <option value="left">Left</option>
+    <option value="center">Center</option>
+    <option value="right">Right</option>
+  </Form.Select>
+</Form.Group>
+
 
               {/* COLORS */}
               <Row>
@@ -212,13 +247,14 @@ function Customize() {
 
               {/* SUBMIT */}
               <Button
-                type="submit"
-                variant="primary"
-                disabled={loading}
-                className="mt-3"
-              >
-                {loading ? <Spinner size="sm" /> : "Save Attributes"}
-              </Button>
+  type="submit"
+  variant="primary"
+  disabled={loading}
+  className="mt-3"
+>
+  {loading ? <Spinner size="sm" /> : attributesExist ? "Update Attributes" : "Save Attributes"}
+</Button>
+
             </Form>
           </div>
         </Col>
