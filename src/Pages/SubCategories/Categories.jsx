@@ -126,15 +126,21 @@ function Categories() {
   // 🔹 Add Category
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!newCategory.title || (!newCategory.org_id && user.role === "Super Admin")) {
-      return setError("Please fill in all required fields.");
-    }
+    // New (allows Super Admin to skip org_id):
+if (!newCategory.title) {
+  return setError("Please enter a category title.");
+}
+
+const payload = {
+    title: newCategory.title,
+    org_id: newCategory.org_id || undefined, 
+};
 
     setSubmitting(true);
     try {
       const res = await axios.post(
         "https://neil-backend-1.onrender.com/categories/new",
-        newCategory,
+        payload,
         { headers: { Authorization: `Bearer ${accessToken}` } }
       );
 
@@ -167,15 +173,22 @@ function Categories() {
 
 const handleEditSubmit = async (e) => {
   e.preventDefault();
-  if (!newCategory.title || (user.role === "Super Admin" && newCategory.org_id === "")) {
-    return setError("Please fill in all required fields.");
-  }
+  // New (allows Super Admin to skip org_id):
+if (!newCategory.title) {
+  return setError("Please enter a category title.");
+}
+
+// Prepare payload for patch
+const payload = {
+    title: newCategory.title,
+    org_id: newCategory.org_id || null, // Explicitly send null if empty string is selected for update
+};
 
   setSubmitting(true);
   try {
     const res = await axios.patch(
       `https://neil-backend-1.onrender.com/categories/update/${editingCategory.id}`,
-      newCategory,
+      payload,
       { headers: { Authorization: `Bearer ${accessToken}` } }
     );
 
@@ -358,7 +371,6 @@ const handleEditSubmit = async (e) => {
         name="org_id"
         value={newCategory.org_id}
         onChange={handleChange}
-        required
       >
         <option value="">Select Organization</option>
         {organizations.map((org) => (

@@ -36,6 +36,7 @@ import { AllProviders } from './context/AllProviders';
 import Categories from './Pages/SubCategories/Categories';
 import PaymentPage from './Pages/Users/PaymentPage';
 import Customize from './Pages/Organization/Customize';
+import CustomizeProduct from './Pages/Products/CustomizeProduct';
 
 const stripePromise  = loadStripe("pk_test_51STDSEJ0pzVuvwN7FVivbYOUDiwKnNISai4iOAGwdG4CiQspWZYDpQpdMXErA06gPKLRx8jZ2QCdU1oUDWwZ5X4A002VPrPgZ5");
 
@@ -66,6 +67,7 @@ function AppRoutes() {
           <Route path='/admin/categories' element={<ProtectedRoute><Categories /></ProtectedRoute>} />
           <Route path='/admin/sub-categories' element={<ProtectedRoute><SubCategories /></ProtectedRoute>} />
           <Route path='/admin/products/:id' element={<ProtectedRoute><SpecificProduct /></ProtectedRoute>} />
+          <Route path='/admin/products/:id/customize' element={<ProtectedRoute><CustomizeProduct/></ProtectedRoute>} />
           <Route path='/admin/logos' element={<ProtectedRoute><Logos /></ProtectedRoute>} />
           <Route path='/admin/logos/new-logo' element={<ProtectedRoute><CreateLogos /></ProtectedRoute>} />
           <Route path='/admin/orders' element={<ProtectedRoute><FullOrders /></ProtectedRoute>} />
