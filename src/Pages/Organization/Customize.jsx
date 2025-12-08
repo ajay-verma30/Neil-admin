@@ -22,7 +22,6 @@ function Customize() {
   const [message, setMessage] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
   const [attributesExist, setAttributesExist] = useState(false);
-  const [textAlign, setTextAlign] = useState("center");
 
   // -------------------------------
   // LOAD EXISTING ATTRIBUTES
@@ -81,6 +80,7 @@ useEffect(() => {
 
   try {
     const formData = new FormData();
+    formData.append("org_id", id);
     formData.append("org_context", orgContext);
     formData.append("text_color", textColor);
     formData.append("background_color", backgroundColor);
@@ -187,17 +187,6 @@ useEffect(() => {
                   placeholder="Write context..."
                 />
               </Form.Group>
-              <Form.Group className="mb-3">
-  <Form.Label>Text Alignment</Form.Label>
-  <Form.Select 
-    value={textAlign} 
-    onChange={(e) => setTextAlign(e.target.value)}
-  >
-    <option value="left">Left</option>
-    <option value="center">Center</option>
-    <option value="right">Right</option>
-  </Form.Select>
-</Form.Group>
 
 
               {/* COLORS */}
