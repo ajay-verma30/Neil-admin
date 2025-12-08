@@ -1008,7 +1008,7 @@ const fetchData = useCallback(async () => {
                                       </Col>
                                       <Col md={3}>
                                         <strong>Position/Size:</strong>
-                                        <div className="small text-muted">X: {pos.x}, Y: {pos.y}</div>
+                                        <div className="small text-muted">X: {pos.position_x}, Y: {pos.position_y}</div>
                                         <div className="small text-muted">W: {pos.width}, H: {pos.height}</div>
                                       </Col>
                                       <Col md={2}>

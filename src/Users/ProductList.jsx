@@ -356,7 +356,9 @@ function ProductList() {
 
                                     return (
                                         <Col key={product.id} xs={12} sm={6} md={4} lg={4} xl={3}>
-                                            <Card className="h-100 shadow-sm border-0 product-card">
+                                            <Card className="h-100 shadow-sm border-0 product-card"
+                                            onClick={() => productNav(product.id)}
+                                            style={{cursor:"pointer"}}>
                                                 <div className="position-relative">
                                                     <Card.Img
                                                         variant="top"
