@@ -27,7 +27,7 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import "./Groups.css";
 
-const API_BASE_URL = "http://localhost:3000";
+const API_BASE_URL = "https://neil-backend-1.onrender.com";
 
 function SpecGroup() {
   const { id } = useParams();
