@@ -142,9 +142,14 @@ function Cart() {
   };
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
+    <div
+      style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}
+    >
       <TopBar />
-      <Container className="mt-5 pt-5" style={{ flex: 1, paddingBottom: "100px" }}>
+      <Container
+        className="mt-5 pt-5"
+        style={{ flex: 1, paddingBottom: "100px" }}
+      >
         <h3 className="mb-4 fw-bold text-primary">🛒 My Cart</h3>
 
         {loading ? (
@@ -180,12 +185,14 @@ function Cart() {
                       <span>{item.title}</span>
                     </td>
                     <td>
-                      {Object.entries(item.sizes || {}).map(([size, details]) => (
-                        <div key={size}>
-                          <strong>{size.toUpperCase()}</strong>: {details.qty} × $
-                          {details.price} = ${details.subtotal}
-                        </div>
-                      ))}
+                      {Object.entries(item.sizes || {}).map(
+                        ([size, details]) => (
+                          <div key={size}>
+                            <strong>{size.toUpperCase()}</strong>: {details.qty}{" "}
+                            × ${details.price} = ${details.subtotal}
+                          </div>
+                        )
+                      )}
                     </td>
                     <td className="fw-semibold">${item.total_price}</td>
                     <td className="text-center">
@@ -346,7 +353,8 @@ function Cart() {
           {showNewAddressForm && (
             <div className="mt-4 border-top pt-3">
               <h6 className="fw-bold">
-                Add New {addressContext === "shipping" ? "Shipping" : "Billing"} Address
+                Add New {addressContext === "shipping" ? "Shipping" : "Billing"}{" "}
+                Address
               </h6>
               <Form className="mt-3" onSubmit={handleSaveAddress}>
                 <Form.Group className="mb-2">
@@ -365,7 +373,10 @@ function Cart() {
                     type="text"
                     value={newAddress.address_line_1}
                     onChange={(e) =>
-                      setNewAddress({ ...newAddress, address_line_1: e.target.value })
+                      setNewAddress({
+                        ...newAddress,
+                        address_line_1: e.target.value,
+                      })
                     }
                   />
                 </Form.Group>
@@ -375,7 +386,10 @@ function Cart() {
                     type="text"
                     value={newAddress.address_line_2}
                     onChange={(e) =>
-                      setNewAddress({ ...newAddress, address_line_2: e.target.value })
+                      setNewAddress({
+                        ...newAddress,
+                        address_line_2: e.target.value,
+                      })
                     }
                   />
                 </Form.Group>
@@ -399,7 +413,10 @@ function Cart() {
                         type="text"
                         value={newAddress.state}
                         onChange={(e) =>
-                          setNewAddress({ ...newAddress, state: e.target.value })
+                          setNewAddress({
+                            ...newAddress,
+                            state: e.target.value,
+                          })
                         }
                       />
                     </Form.Group>
@@ -413,7 +430,10 @@ function Cart() {
                         type="text"
                         value={newAddress.postal_code}
                         onChange={(e) =>
-                          setNewAddress({ ...newAddress, postal_code: e.target.value })
+                          setNewAddress({
+                            ...newAddress,
+                            postal_code: e.target.value,
+                          })
                         }
                       />
                     </Form.Group>
@@ -425,7 +445,10 @@ function Cart() {
                         type="text"
                         value={newAddress.country}
                         onChange={(e) =>
-                          setNewAddress({ ...newAddress, country: e.target.value })
+                          setNewAddress({
+                            ...newAddress,
+                            country: e.target.value,
+                          })
                         }
                       />
                     </Form.Group>
@@ -437,12 +460,19 @@ function Cart() {
                   label="Set as default"
                   checked={newAddress.is_default}
                   onChange={(e) =>
-                    setNewAddress({ ...newAddress, is_default: e.target.checked })
+                    setNewAddress({
+                      ...newAddress,
+                      is_default: e.target.checked,
+                    })
                   }
                 />
 
                 <div className="text-end mt-3">
-                  <Button type="submit" variant="success" disabled={savingAddress}>
+                  <Button
+                    type="submit"
+                    variant="success"
+                    disabled={savingAddress}
+                  >
                     {savingAddress ? (
                       <Spinner animation="border" size="sm" />
                     ) : (
@@ -456,52 +486,62 @@ function Cart() {
         </Modal.Body>
 
         <Modal.Footer className="d-flex justify-content-between">
-          <Button variant="secondary" onClick={() => setShowAddressModal(false)}>
+          <Button
+            variant="secondary"
+            onClick={() => setShowAddressModal(false)}
+          >
             Cancel
           </Button>
           <Button
-  variant="success"
-  disabled={!selectedShipping || !selectedBilling}
-  onClick={async () => {
-    try {
-      setShowAddressModal(false);
-      setLoading(true);
+            variant="success"
+            disabled={!selectedShipping || !selectedBilling}
+            onClick={async () => {
+              try {
+                setShowAddressModal(false);
+                setLoading(true);
 
-      // 1️⃣ Request clientSecret from backend
-      const pi = await axios.post(
-        "https://neil-backend-1.onrender.com/create-payment-intent",
-        { amount: Math.round(subtotal * 100) } // in cents
-      );
+                // 1️⃣ Request clientSecret from backend
+                const pi = await axios.post(
+                  "https://neil-backend-1.onrender.com/create-payment-intent",
+                  { amount: Math.round(subtotal * 100) } // in cents
+                );
 
-      const clientSecret = pi.data.clientSecret;
+                const clientSecret = pi.data.clientSecret;
 
-      // 2️⃣ Navigate to /payment with clientSecret + addresses
-      navigate("/payment", {
-        state: {
-          clientSecret,
-          subtotal,
-          shipping: selectedShipping,
-          billing: selectedBilling,
-        },
-      });
-    } catch (err) {
-      alert("❌ Failed to start payment session");
-    } finally {
-      setLoading(false);
-    }
-  }}
->
-  {loading ? (
-    <Spinner animation="border" size="sm" />
-  ) : (
-    "Confirm & Place Order"
-  )}
-</Button>
-
+                // 2️⃣ Navigate to /payment with clientSecret + addresses
+                navigate("/payment", {
+                  state: {
+                    clientSecret,
+                    subtotal,
+                    shipping: selectedShipping,
+                    billing: selectedBilling,
+                  },
+                });
+              } catch (err) {
+                alert("❌ Failed to start payment session");
+              } finally {
+                setLoading(false);
+              }
+            }}
+          >
+            {loading ? (
+              <Spinner animation="border" size="sm" />
+            ) : (
+              "Confirm & Place Order"
+            )}
+          </Button>
         </Modal.Footer>
       </Modal>
 
-<Footer style={{ position: "fixed", bottom: 0, left: 0, right: 0, width: "100%" }} />
+      <Footer
+        style={{
+          position: "fixed",
+          bottom: 0,
+          left: 0,
+          right: 0,
+          width: "100%",
+        }}
+      />
     </div>
   );
 }

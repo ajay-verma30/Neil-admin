@@ -1,0 +1,9 @@
+.pencil:hover{
+    color: green !important;
+    cursor: pointer;
+}
+
+.trash:hover{
+    color: red !important;
+    cursor: pointer;
+}

@@ -202,7 +202,7 @@ function CustomizeProduct() {
                   style={{
                     marginTop: 30,
                     width: "100%",
-                    height: 500,
+                    aspectRatio: "1/1",
                     border: "1px solid #ccc",
                     borderRadius: 10,
                     position: "relative",

@@ -1,93 +1,100 @@
-import React from "react";
+import React, { useContext, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { CardElement, useStripe, useElements } from "@stripe/react-stripe-js";
 import axios from "axios";
 import { AuthContext } from "../../context/AuthContext";
-import { useContext, useState } from "react";
+import { Spinner, Container, Card, Button } from "react-bootstrap";
 
 function PaymentPage() {
-  const { user, accessToken } = useContext(AuthContext);
+  const { accessToken, user } = useContext(AuthContext);
   const navigate = useNavigate();
   const location = useLocation();
   const stripe = useStripe();
   const elements = useElements();
   const [processing, setProcessing] = useState(false);
 
-  const { clientSecret, subtotal, shipping, billing } = location.state || {};
-
- if (!location.state || !location.state.clientSecret) {
-  return (
-    <div className="text-center mt-5">
-      <h4>Invalid payment session. Redirecting you back to cart...</h4>
-      {setTimeout(() => navigate("/cart"), 2000)}
-    </div>
-  );
-}
-
-
+  const { clientSecret, totalAmount, subtotal, paymentType, couponData, shipping, billing } = location.state || {};
+  const finalAmount = paymentType === "coupon" ? totalAmount : subtotal;
 
   const handlePayment = async (e) => {
-  e.preventDefault();
-  setProcessing(true);
+    e.preventDefault();
+    if (!stripe || !elements) return;
 
-  const card = elements.getElement(CardElement);
-  try {
-    const result = await stripe.confirmCardPayment(clientSecret, { payment_method: { card } });
+    setProcessing(true);
+    const card = elements.getElement(CardElement);
 
-    if (result.error) throw new Error(result.error.message);
+    try {
+      const result = await stripe.confirmCardPayment(clientSecret, {
+        payment_method: { card },
+      });
 
-    if (result.paymentIntent.status === "succeeded") {
+      if (result.error) throw new Error(result.error.message);
 
-      const res = await axios.post(
-        "https://neil-backend-1.onrender.com/checkout/create",
-        {
-          user_id: user.id,
-          org_id: user.org_id || 1,
-          shipping_address_id: shipping,
-          billing_address_id: billing,
-          payment_status:"Paid",
-          payment_method: "STRIPE",
-          stripe_payment_id: result.paymentIntent.id,
-          amount: subtotal,
-        },
-        { headers: { Authorization: `Bearer ${accessToken}` } }
-      );
+      if (result.paymentIntent.status === "succeeded") {
+  const stripeId = result.paymentIntent.id;
+  if (paymentType === "coupon") {
+    const updateRes = await axios.patch(
+      "http://localhost:3000/coupon/update-status",
+      {
+        batchId: location.state.batchId,
+        status: "SUCCESS" 
+      },
+      { headers: { Authorization: `Bearer ${accessToken}` } }
+    );
 
-      if (res.data.success) {
-        alert("Payment successful! Order created.");
-        navigate("/orders");
-      } else {
-        alert("Order creation failed even though payment succeeded!");
+    if (updateRes.data.success) {
+      alert("✅ Payment Received & Coupons Activated!");
+      if(user?.role === "Super Admin"){
+        navigate("/admin/coupons");
+      }
+      else{
+        const orgId = user?.organization_id || "my-org"; 
+    navigate(`/${orgId}/coupons`);
       }
     }
-  } catch (err) {
-    alert(err.message || "Payment failed");
-  } finally {
-    setProcessing(false);
-  }
-};
-
+        } 
+        else {
+          const res = await axios.post(
+            "https://neil-backend-1.onrender.com/checkout/create",
+            {
+              user_id: couponData?.admin_id, 
+              shipping_address_id: shipping,
+              billing_address_id: billing,
+              payment_status: "Paid",
+              stripe_payment_id: stripeId,
+              amount: finalAmount,
+            },
+            { headers: { Authorization: `Bearer ${accessToken}` } }
+          );
+          if (res.data.success) { navigate("/orders"); }
+        }
+      }
+    } catch (err) {
+      alert(err.message || "Something went wrong");
+    } finally {
+      setProcessing(false);
+    }
+  };
 
   return (
-    <div className="container mt-5 pt-5" style={{ maxWidth: "500px" }}>
-      <h3 className="text-center mb-4">Complete Your Payment</h3>
-      <div className="card p-4 shadow">
-        <p className="fw-bold mb-1">Amount to Pay:</p>
-        <h4 className="text-success mb-4">${subtotal?.toFixed(2)}</h4>
-
+    <Container className="mt-5 d-flex justify-content-center">
+      <Card style={{ maxWidth: "450px", width: "100%" }} className="p-4 shadow">
+        <h4 className="text-center mb-4">Complete Your Payment</h4>
+        <div className="bg-light p-3 mb-3 text-center rounded">
+          <p className="mb-0">Payable Amount</p>
+          <h2 className="text-success">${finalAmount?.toFixed(2)}</h2>
+        </div>
         <form onSubmit={handlePayment}>
-          <div className="mb-3 border p-3 rounded">
+          <div className="border p-3 rounded mb-3 bg-white">
             <CardElement options={{ hidePostalCode: true }} />
           </div>
-
-          <button className="btn btn-primary w-100" disabled={!stripe || processing}>
-            {processing ? "Processing..." : "Pay Now"}
-          </button>
+          <Button variant="primary" className="w-100" type="submit" disabled={processing || !stripe}>
+            {processing ? <Spinner animation="border" size="sm" /> : `Pay Now`}
+          </Button>
         </form>
-      </div>
-    </div>
+      </Card>
+    </Container>
   );
 }
-
 
 export default PaymentPage;

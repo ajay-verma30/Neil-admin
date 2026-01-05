@@ -37,6 +37,9 @@ import Categories from './Pages/SubCategories/Categories';
 import PaymentPage from './Pages/Users/PaymentPage';
 import Customize from './Pages/Organization/Customize';
 import CustomizeProduct from './Pages/Products/CustomizeProduct';
+import Coupons from './Pages/Coupons/Coupons';
+import SpecGroup from './Pages/Groups/SpecGroup';
+import SpecCoupon from './Pages/Coupons/SpecCoupon';
 
 const stripePromise  = loadStripe("pk_test_51STDSEJ0pzVuvwN7FVivbYOUDiwKnNISai4iOAGwdG4CiQspWZYDpQpdMXErA06gPKLRx8jZ2QCdU1oUDWwZ5X4A002VPrPgZ5");
 
@@ -62,6 +65,7 @@ function AppRoutes() {
           <Route path='/admin/users/:id' element={<ProtectedRoute><SpecificUser /></ProtectedRoute>} />
           <Route path='/admin/users/new' element={<ProtectedRoute><NewUser /></ProtectedRoute>} />
           <Route path='/admin/groups' element={<ProtectedRoute><Groups /></ProtectedRoute>} />
+          <Route path='/admin/groups/:id' element={<ProtectedRoute><SpecGroup /></ProtectedRoute>} />
           <Route path='/admin/products' element={<ProtectedRoute><Products /></ProtectedRoute>} />
           <Route path='/admin/products/new' element={<ProtectedRoute><CreateProducts /></ProtectedRoute>} />
           <Route path='/admin/categories' element={<ProtectedRoute><Categories /></ProtectedRoute>} />
@@ -73,6 +77,8 @@ function AppRoutes() {
           <Route path='/admin/orders' element={<ProtectedRoute><FullOrders /></ProtectedRoute>} />
           <Route path='/admin/orders/:id' element={<ProtectedRoute><SpecificOrder /></ProtectedRoute>} />
           <Route path='/admin/my-profile' element={<ProtectedRoute><MyProfile1/></ProtectedRoute>}/>
+          <Route path='/admin/coupons' element={<ProtectedRoute><Coupons/></ProtectedRoute>}/>
+          <Route path='/admin/coupons/:id' element={<ProtectedRoute><SpecCoupon/></ProtectedRoute>}/>
         </>
       )}
 
@@ -84,9 +90,9 @@ function AppRoutes() {
           <Route path='/:org_id/users/:id' element={<ProtectedRoute><SpecificUser /></ProtectedRoute>} />
           <Route path='/:org_id/users/new' element={<ProtectedRoute><NewUser /></ProtectedRoute>} />
           <Route path='/:org_id/groups' element={<ProtectedRoute><Groups /></ProtectedRoute>} />
+          <Route path='/:org_id/groups/:id' element={<ProtectedRoute><SpecGroup /></ProtectedRoute>} />
           <Route path='/:org_id/organization_details' element={<ProtectedRoute><SpecificOrganization /></ProtectedRoute>} />
           <Route path='/:org_id/products' element={<ProtectedRoute><Products /></ProtectedRoute>} />
-          {/* <Route path='/:org_id/orders' element={<ProtectedRoute><Users /></ProtectedRoute>} /> */}
           <Route path='/:org_id/products/new' element={<ProtectedRoute><CreateProducts /></ProtectedRoute>} />
           <Route path='/:org_id/categories' element={<ProtectedRoute><Categories /></ProtectedRoute>} />
           <Route path='/:org_id/sub-categories' element={<ProtectedRoute><SubCategories /></ProtectedRoute>} />
@@ -96,6 +102,8 @@ function AppRoutes() {
           <Route path='/:org_id/org_orders' element={<ProtectedRoute><FullOrders /></ProtectedRoute>} />
           <Route path='/:org_id/orders/:id' element={<ProtectedRoute><SpecificOrder /></ProtectedRoute>} />
           <Route path='/:org_id/my-profile' element={<ProtectedRoute><MyProfile1/></ProtectedRoute>}/>
+          <Route path='/:org_id/coupons' element={<ProtectedRoute><Coupons/></ProtectedRoute>}/>
+          <Route path='/:org_id/coupons/:id' element={<ProtectedRoute><SpecCoupon/></ProtectedRoute>}/>
           
         </>
       )}

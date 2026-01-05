@@ -15,7 +15,8 @@ import {
   faList,
   faFolderTree,
   faTruckFast,
-  faLayerGroup,  
+  faLayerGroup,
+  faDollarSign  
 } from "@fortawesome/free-solid-svg-icons";
 import { Link, useLocation } from "react-router-dom";
 import "./SideBar.css";
@@ -50,7 +51,8 @@ const Sidebar = () => {
         icon: faUsers,
         children: [
           { title: "Users", icon: faUser, path: `/admin/users` },
-          { title: "Groups", icon: faUserFriends, path: `/admin/groups` }
+          { title: "Groups", icon: faUserFriends, path: `/admin/groups` },
+          { title: "Coupons", icon: faDollarSign, path: `/admin/coupons` }
         ],
       },
       {
@@ -81,7 +83,8 @@ const Sidebar = () => {
         icon: faUsers,
         children: [
           { title: "Users", icon: faUser, path: `/${effectiveOrgId}/users` },
-          { title: "Groups", icon: faUserFriends, path: `/${effectiveOrgId}/groups` }
+          { title: "Groups", icon: faUserFriends, path: `/${effectiveOrgId}/groups` },
+          { title: "Coupons", icon: faDollarSign, path: `/${effectiveOrgId}/coupons` }
         ],
       },
       {

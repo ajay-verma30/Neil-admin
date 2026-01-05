@@ -15,11 +15,16 @@ import TopBar from "../../Components/TopBar/TopBar";
 import Sidebar from "../../Components/SideBar/SideBar";
 import { AuthContext } from "../../context/AuthContext";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faPlus, faSearch, faRedo } from "@fortawesome/free-solid-svg-icons";
+import { useNavigate } from "react-router-dom";
+import './Groups.css';
+import { faPlus, faSearch, faRedo, faPencil, faTrash } from "@fortawesome/free-solid-svg-icons";
 import axios from "axios";
+
+const BASE_URL = "https://neil-backend-1.onrender.com";
 
 function Groups() {
   const { accessToken, user } = useContext(AuthContext);
+  const navigate = useNavigate();
   const [groups, setGroups] = useState([]);
   const [loading, setLoading] = useState(false);
   const [alert, setAlert] = useState(null);
@@ -38,12 +43,11 @@ function Groups() {
 
   // === Fetch Groups ===
   const fetchGroups = useCallback(async () => {
-    let endpoint = "https://neil-backend-1.onrender.com/groups/all?";
+    let endpoint = `${BASE_URL}/groups/all?`;
     const queryParams = [];
 
     if (filterSearch) queryParams.push(`search=${encodeURIComponent(filterSearch)}`);
-    if (filterOrgId && user?.role === "Super Admin")
-      queryParams.push(`org_id=${filterOrgId}`);
+    if (filterOrgId && user?.role === "Super Admin") queryParams.push(`org_id=${filterOrgId}`);
     if (filterStartDate) queryParams.push(`start_date=${filterStartDate}`);
     if (filterEndDate) queryParams.push(`end_date=${filterEndDate}`);
 
@@ -55,7 +59,6 @@ function Groups() {
         headers: { Authorization: `Bearer ${accessToken}` },
       });
       setGroups(res.data.groups || []);
-      if (alert && alert.type === "success") setAlert(null);
     } catch (error) {
       setAlert({
         type: "danger",
@@ -64,27 +67,20 @@ function Groups() {
     } finally {
       setLoading(false);
     }
-  }, [accessToken, alert, filterSearch, filterOrgId, filterStartDate, filterEndDate, user?.role]);
+  }, [accessToken, filterSearch, filterOrgId, filterStartDate, filterEndDate, user?.role]);
 
   // === Fetch Organizations (for Super Admins) ===
   const fetchOrganizations = useCallback(async () => {
     try {
-      const res = await axios.get(
-        "https://neil-backend-1.onrender.com/organization/all-organizations",
-        { headers: { Authorization: `Bearer ${accessToken}` } }
-      );
-      if (res.data.success && res.data.organizations) {
-        setOrgs(res.data.organizations);
-      } else {
-        setOrgs([]);
-      }
+      const res = await axios.get(`${BASE_URL}/organization/all-organizations`, {
+        headers: { Authorization: `Bearer ${accessToken}` }
+      });
+      if (res.data.success) setOrgs(res.data.organizations);
     } catch (err) {
       console.error("Error fetching organizations:", err);
-      setOrgs([]);
     }
   }, [accessToken]);
 
-  // === On Mount ===
   useEffect(() => {
     if (accessToken) {
       fetchGroups();
@@ -92,7 +88,6 @@ function Groups() {
     }
   }, [accessToken, fetchGroups, fetchOrganizations, user?.role, triggerFetch]);
 
-  // === Reset Filters ===
   const handleResetFilters = () => {
     setFilterSearch("");
     setFilterOrgId("");
@@ -101,56 +96,60 @@ function Groups() {
     setTriggerFetch((prev) => prev + 1);
   };
 
-  // === Modal Handlers ===
   const handleShowModal = async () => {
     setShowAddGroupModal(true);
     setNewGroupTitle("");
     setSelectedOrgId("");
-    setAlert(null);
     if (user?.role === "Super Admin" && orgs.length === 0) await fetchOrganizations();
   };
 
-  const handleCloseModal = () => {
-    setShowAddGroupModal(false);
-    setAlert(null);
-  };
+  const handleCloseModal = () => setShowAddGroupModal(false);
 
   // === Create Group ===
   const handleCreateGroup = async (e) => {
     e.preventDefault();
-    const title = newGroupTitle.trim();
-    if (!title) {
-      setAlert({ type: "warning", message: "Group title cannot be empty." });
-      return;
-    }
-
     const orgId = user.role === "Super Admin" ? selectedOrgId : user.org_id;
-    if (!orgId) {
-      setAlert({ type: "warning", message: "Please select an organization." });
-      return;
-    }
 
     setSubmitting(true);
-    setAlert(null);
-
     try {
-      const payload = { title, org_id: orgId };
-      await axios.post("https://neil-backend-1.onrender.com/groups/new", payload, {
-        headers: { Authorization: `Bearer ${accessToken}` },
-      });
-
+      await axios.post(`${BASE_URL}/groups/new`, 
+        { title: newGroupTitle.trim(), org_id: orgId },
+        { headers: { Authorization: `Bearer ${accessToken}` } }
+      );
       handleCloseModal();
-      setAlert({ type: "success", message: `Group "${title}" created successfully!` });
-      await fetchGroups();
+      setAlert({ type: "success", message: "Group created successfully!" });
+      fetchGroups();
     } catch (error) {
-      console.error("Error creating group:", error);
-      setAlert({
-        type: "warning",
-        message:
-          error.response?.data?.message || "An unexpected error occurred during creation.",
-      });
+      setAlert({ type: "danger", message: error.response?.data?.message || "Creation failed." });
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  // === View Group Details (Members) ===
+  const handleViewGroup = (groupId, orgId) => {
+    if (user?.role === "Super Admin") {
+      navigate(`/admin/groups/${groupId}`);
+    } else {
+      const organizationId = orgId || user?.org_id;
+      navigate(`/${organizationId}/groups/${groupId}`);
+    }
+  };
+
+  // === Delete Group ===
+  const handleDeleteGroup = async (groupId) => {
+    if (window.confirm("Are you sure? This will remove all members from this group too.")) {
+      try {
+        const res = await axios.delete(`${BASE_URL}/groups/${groupId}`, {
+          headers: { Authorization: `Bearer ${accessToken}` }
+        });
+        if (res.status === 200) {
+          setAlert({ type: "success", message: "Group deleted successfully!" });
+          fetchGroups();
+        }
+      } catch (err) {
+        setAlert({ type: "danger", message: err.response?.data?.message || "Delete failed" });
+      }
     }
   };
 
@@ -166,122 +165,50 @@ function Groups() {
           <Container fluid className="form-box">
             <Card className="shadow-sm border-0 mb-4 rounded-4">
               <Card.Body>
-                {/* Header */}
                 <div className="d-flex justify-content-between align-items-center mb-4">
                   <h4 className="fw-bold mb-0 text-primary">Groups List</h4>
                   {["Super Admin", "Admin", "Manager"].includes(user?.role) && (
                     <Button variant="primary" onClick={handleShowModal}>
-                      <FontAwesomeIcon icon={faPlus} className="me-2" />
-                      Add Group
+                      <FontAwesomeIcon icon={faPlus} className="me-2" /> Add Group
                     </Button>
                   )}
                 </div>
 
-                {/* Filters */}
+                {/* Filters Section */}
                 <Card className="border-0 bg-light p-3 mb-4 shadow-sm rounded-3">
-                  <h6 className="fw-semibold mb-3 text-secondary">
-                    <FontAwesomeIcon icon={faSearch} className="me-2 text-muted" />
-                    Filter Groups
-                  </h6>
                   <Row className="g-3 align-items-end">
                     <Col md={3}>
-                      <Form.Group controlId="filterSearch">
-                        <Form.Label className="small fw-semibold text-muted">
-                          Search Title
-                        </Form.Label>
-                        <Form.Control
-                          type="text"
-                          placeholder="Group name..."
-                          value={filterSearch}
-                          onChange={(e) => setFilterSearch(e.target.value)}
-                        />
-                      </Form.Group>
+                      <Form.Label className="small fw-semibold text-muted">Search Title</Form.Label>
+                      <Form.Control type="text" placeholder="Group name..." value={filterSearch} onChange={(e) => setFilterSearch(e.target.value)} />
                     </Col>
-
                     {user?.role === "Super Admin" && (
                       <Col md={3}>
-                        <Form.Group controlId="filterOrg">
-                          <Form.Label className="small fw-semibold text-muted">
-                            Organization
-                          </Form.Label>
-                          <Form.Select
-                            value={filterOrgId}
-                            onChange={(e) => setFilterOrgId(e.target.value)}
-                          >
-                            <option value="">All Organizations</option>
-                            {orgs.map((org) => (
-                              <option key={org.id} value={org.id}>
-                                {org.title}
-                              </option>
-                            ))}
-                          </Form.Select>
-                        </Form.Group>
+                        <Form.Label className="small fw-semibold text-muted">Organization</Form.Label>
+                        <Form.Select value={filterOrgId} onChange={(e) => setFilterOrgId(e.target.value)}>
+                          <option value="">All Organizations</option>
+                          {orgs.map((org) => <option key={org.id} value={org.id}>{org.title}</option>)}
+                        </Form.Select>
                       </Col>
                     )}
-
                     <Col md={2}>
-                      <Form.Group controlId="filterStartDate">
-                        <Form.Label className="small fw-semibold text-muted">
-                          Created After
-                        </Form.Label>
-                        <Form.Control
-                          type="date"
-                          value={filterStartDate}
-                          onChange={(e) => setFilterStartDate(e.target.value)}
-                        />
-                      </Form.Group>
+                      <Form.Label className="small fw-semibold text-muted">Created After</Form.Label>
+                      <Form.Control type="date" value={filterStartDate} onChange={(e) => setFilterStartDate(e.target.value)} />
                     </Col>
-
                     <Col md={2}>
-                      <Form.Group controlId="filterEndDate">
-                        <Form.Label className="small fw-semibold text-muted">
-                          Created Before
-                        </Form.Label>
-                        <Form.Control
-                          type="date"
-                          value={filterEndDate}
-                          onChange={(e) => setFilterEndDate(e.target.value)}
-                        />
-                      </Form.Group>
+                      <Form.Label className="small fw-semibold text-muted">Created Before</Form.Label>
+                      <Form.Control type="date" value={filterEndDate} onChange={(e) => setFilterEndDate(e.target.value)} />
                     </Col>
-
                     <Col md={2} className="d-flex gap-2">
-                      <Button
-                        variant="success"
-                        title="Apply Filters"
-                        onClick={() => setTriggerFetch((prev) => prev + 1)}
-                      >
-                        <FontAwesomeIcon icon={faSearch} />
-                      </Button>
-                      <Button
-                        variant="secondary"
-                        title="Reset Filters"
-                        onClick={handleResetFilters}
-                      >
-                        <FontAwesomeIcon icon={faRedo} />
-                      </Button>
+                      <Button variant="success" onClick={() => setTriggerFetch(p => p + 1)}><FontAwesomeIcon icon={faSearch} /></Button>
+                      <Button variant="secondary" onClick={handleResetFilters}><FontAwesomeIcon icon={faRedo} /></Button>
                     </Col>
                   </Row>
                 </Card>
 
-                {/* Alert */}
-                {alert && alert.type !== "warning" && (
-                  <Alert
-                    variant={alert.type}
-                    onClose={() => setAlert(null)}
-                    dismissible
-                    className="mb-3"
-                  >
-                    {alert.message}
-                  </Alert>
-                )}
+                {alert && <Alert variant={alert.type} dismissible onClose={() => setAlert(null)}>{alert.message}</Alert>}
 
-                {/* Table or Loader */}
                 {loading ? (
-                  <div className="text-center py-5">
-                    <Spinner animation="border" variant="primary" />
-                    <p className="mt-3 text-muted">Loading groups...</p>
-                  </div>
+                  <div className="text-center py-5"><Spinner animation="border" variant="primary" /></div>
                 ) : (
                   <div className="table-responsive">
                     <Table hover bordered className="align-middle">
@@ -291,6 +218,7 @@ function Groups() {
                           <th>Title</th>
                           <th>Organization</th>
                           <th>Created At</th>
+                          <th>Actions</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -301,14 +229,22 @@ function Groups() {
                               <td className="fw-semibold">{g.title}</td>
                               <td>{g.organization}</td>
                               <td>{new Date(g.created_at).toLocaleString()}</td>
+                              <td>
+                                <FontAwesomeIcon 
+                                  icon={faPencil} 
+                                  className="me-3 text-primary pointer" 
+                                  onClick={() => handleViewGroup(g.id, g.org_id)} 
+                                /> 
+                                <FontAwesomeIcon 
+                                  icon={faTrash} 
+                                  className="text-danger pointer" 
+                                  onClick={() => handleDeleteGroup(g.id)} 
+                                />
+                              </td>
                             </tr>
                           ))
                         ) : (
-                          <tr>
-                            <td colSpan="4" className="text-center py-4 text-muted">
-                              No groups found.
-                            </td>
-                          </tr>
+                          <tr><td colSpan="5" className="text-center py-4">No groups found.</td></tr>
                         )}
                       </tbody>
                     </Table>
@@ -320,68 +256,29 @@ function Groups() {
         </Col>
       </Row>
 
-      {/* === Add Group Modal === */}
+      {/* Add Group Modal */}
       <Modal show={showAddGroupModal} onHide={handleCloseModal} centered>
-        <Modal.Header closeButton>
-          <Modal.Title>Add New Group</Modal.Title>
-        </Modal.Header>
+        <Modal.Header closeButton><Modal.Title>Add New Group</Modal.Title></Modal.Header>
         <Form onSubmit={handleCreateGroup}>
           <Modal.Body>
-            {alert && alert.type === "warning" && (
-              <Alert
-                variant="warning"
-                onClose={() => setAlert(null)}
-                dismissible
-                className="mb-3"
-              >
-                {alert.message}
-              </Alert>
-            )}
-
             {user.role === "Super Admin" && (
-              <Form.Group className="mb-3" controlId="formGroupOrg">
+              <Form.Group className="mb-3">
                 <Form.Label>Select Organization</Form.Label>
-                <Form.Select
-                  value={selectedOrgId}
-                  onChange={(e) => setSelectedOrgId(e.target.value)}
-                  disabled={submitting}
-                  required
-                >
+                <Form.Select value={selectedOrgId} onChange={(e) => setSelectedOrgId(e.target.value)} required>
                   <option value="">-- Select Organization --</option>
-                  {orgs.map((org) => (
-                    <option key={org.id} value={org.id}>
-                      {org.title}
-                    </option>
-                  ))}
+                  {orgs.map((org) => <option key={org.id} value={org.id}>{org.title}</option>)}
                 </Form.Select>
               </Form.Group>
             )}
-
-            <Form.Group className="mb-3" controlId="formGroupTitle">
+            <Form.Group className="mb-3">
               <Form.Label>Group Title</Form.Label>
-              <Form.Control
-                type="text"
-                placeholder="Enter group name (e.g., Sales Team)"
-                value={newGroupTitle}
-                onChange={(e) => setNewGroupTitle(e.target.value)}
-                disabled={submitting}
-                required
-              />
+              <Form.Control type="text" placeholder="Enter group name" value={newGroupTitle} onChange={(e) => setNewGroupTitle(e.target.value)} required />
             </Form.Group>
           </Modal.Body>
           <Modal.Footer>
-            <Button variant="secondary" onClick={handleCloseModal} disabled={submitting}>
-              Cancel
-            </Button>
-            <Button variant="primary" type="submit" disabled={submitting || !newGroupTitle.trim()}>
-              {submitting ? (
-                <>
-                  <Spinner animation="border" size="sm" className="me-2" />
-                  Creating...
-                </>
-              ) : (
-                "Create Group"
-              )}
+            <Button variant="secondary" onClick={handleCloseModal}>Cancel</Button>
+            <Button variant="primary" type="submit" disabled={submitting}>
+              {submitting ? "Creating..." : "Create Group"}
             </Button>
           </Modal.Footer>
         </Form>
