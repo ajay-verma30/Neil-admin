@@ -34,7 +34,7 @@ function PaymentPage() {
   const stripeId = result.paymentIntent.id;
   if (paymentType === "coupon") {
     const updateRes = await axios.patch(
-      "http://localhost:3000/coupon/update-status",
+      "https://neil-backend-1.onrender.com/coupon/update-status",
       {
         batchId: location.state.batchId,
         status: "SUCCESS" 
