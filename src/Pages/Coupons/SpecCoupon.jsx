@@ -13,7 +13,7 @@ import { AuthContext } from "../../context/AuthContext";
 import TopBar from "../../Components/TopBar/TopBar";
 import Sidebar from "../../Components/SideBar/SideBar";
 
-const API_BASE_URL = "http://localhost:3000";
+const API_BASE_URL = "https://neil-backend-1.onrender.com";
 
 function SpecCoupon() {
   const { id } = useParams(); 

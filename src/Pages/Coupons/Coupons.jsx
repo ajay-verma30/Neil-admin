@@ -18,7 +18,7 @@ import axios from "axios";
 import { AuthContext } from "../../context/AuthContext";
 import { useNavigate } from "react-router-dom";
 
-const API_BASE_URL = "http://localhost:3000";
+const API_BASE_URL = "https://neil-backend-1.onrender.com";
 const BACKEND_URL = "https://neil-backend-1.onrender.com";
 
 function Coupons() {
