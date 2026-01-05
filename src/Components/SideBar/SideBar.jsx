@@ -26,10 +26,12 @@ import { AuthContext } from "../../context/AuthContext"
 const Sidebar = () => {
   const location = useLocation();
   const [openGroup, setOpenGroup] = useState(null);
-  const {org_id} = useParams();
+  const { org_id: paramOrgId } = useParams();
   const {user} = useContext(AuthContext);
   
-  const effectiveOrgId = org_id || user?.org_id;
+const effectiveOrgId = (user?.role !== "Super Admin") 
+  ? user?.org_id 
+  : (paramOrgId || user?.org_id);
 
   const menuItems = useMemo(() => {
     let items = [];
