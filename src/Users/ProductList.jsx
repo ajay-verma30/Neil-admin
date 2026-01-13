@@ -74,7 +74,7 @@ export default function ProductList() {
         // Debugging logs
         console.log("Fetching products for Org:", user?.org_id || "Guest");
 
-        const response = await axios.get("http://localhost:3000/products/public-list", {
+        const response = await axios.get("https://neil-backend-1.onrender.com/products/public-list", {
           params: {
             category: categoryParam || undefined,
             sub_category: subCategoryParam || undefined,

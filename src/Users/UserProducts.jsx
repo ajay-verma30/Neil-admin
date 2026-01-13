@@ -18,7 +18,7 @@ function UserProducts() {
       const getOrgDetails = async () => {
         try {
           const response = await axios.get(
-            `http://localhost:3000/attributes/organization/${user.org_id}/attributes`,
+            `https://neil-backend-1.onrender.com/attributes/organization/${user.org_id}/attributes`,
             { headers: { Authorization: `Bearer ${accessToken}` } }
           );
           setOrgDetails(response.data.attributes);

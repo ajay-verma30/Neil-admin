@@ -55,7 +55,7 @@ const [logoDropdownOpen, setLogoDropdownOpen] = useState(false);
   useEffect(() => {
     (async () => {
       try {
-        const { data } = await axios.get(`http://localhost:3000/products/public/${id}`);
+        const { data } = await axios.get(`https://neil-backend-1.onrender.com/products/public/${id}`);
         const p = data.product;
         const v = p.variants[0];
         setProduct(p);
@@ -144,7 +144,7 @@ const [logoDropdownOpen, setLogoDropdownOpen] = useState(false);
       ? currentItemData.selectedPlacements 
       : null;
     fd.append("placement_ids", JSON.stringify(placementPayload));
-    const res = await axios.post("http://localhost:3000/customization/new", fd, {
+    const res = await axios.post("https://neil-backend-1.onrender.com/customization/new", fd, {
       headers: { Authorization: `Bearer ${accessToken}` },
     });
     const sizesWithDetails = {};
@@ -170,7 +170,7 @@ const [logoDropdownOpen, setLogoDropdownOpen] = useState(false);
       total_price: totalPrice,
     };
 
-    await axios.post("http://localhost:3000/cart/add", finalItem, {
+    await axios.post("https://neil-backend-1.onrender.com/cart/add", finalItem, {
       headers: { Authorization: `Bearer ${accessToken}` },
     });
 
