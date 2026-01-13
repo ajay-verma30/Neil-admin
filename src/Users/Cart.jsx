@@ -1,25 +1,19 @@
 import React, { useContext, useEffect, useState, useMemo } from "react";
 import TopBar from "../Components/TopBar/TopBar";
+import Footer from "./Footer";
 import { AuthContext } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
-import {
-  Container,
-  Table,
-  Image,
-  Button,
-  Spinner,
-  Modal,
-  Form,
-} from "react-bootstrap";
+import { Container, Table, Image, Button, Spinner, Modal, Form } from "react-bootstrap";
 import axios from "axios";
-import Footer from "./Footer";
 
 function Cart() {
   const { user, accessToken } = useContext(AuthContext);
   const navigate = useNavigate();
-  const [myCartProducts, setMyCartProducts] = useState([]);
-  const [loading, setLoading] = useState(false);
+
+  const [cartItems, setCartItems] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [deletingId, setDeletingId] = useState(null);
+
   const [showAddressModal, setShowAddressModal] = useState(false);
   const [addresses, setAddresses] = useState([]);
   const [fetchingAddresses, setFetchingAddresses] = useState(false);
@@ -39,74 +33,79 @@ function Cart() {
   const [selectedBilling, setSelectedBilling] = useState("");
   const [addressContext, setAddressContext] = useState("");
 
+  // =========================
+  // Fetch cart items
+  // =========================
   useEffect(() => {
-    if (!user) {
-      navigate("/");
-      return;
-    }
-
-    const getMyCart = async () => {
+    const fetchCart = async () => {
       try {
         setLoading(true);
-        const res = await axios.get(
-          `https://neil-backend-1.onrender.com/cart/${user.id}`,
-          {
-            headers: { Authorization: `Bearer ${accessToken}` },
-          }
-        );
-        setMyCartProducts(res.data);
+        const res = await axios.get(`https://neil-backend-1.onrender.com/cart/${user.id}`, {
+          headers: { Authorization: `Bearer ${accessToken}` },
+        });
+        setCartItems(res.data || []);
+        localStorage.setItem("cart", JSON.stringify(res.data || []));
       } catch (err) {
+        console.error("Failed to fetch cart:", err);
       } finally {
         setLoading(false);
       }
     };
+    fetchCart();
+  }, [user, accessToken]);
 
-    getMyCart();
-  }, [user, accessToken, navigate]);
+  // =========================
+  // Subtotal calculation
+  // =========================
+  const subtotal = useMemo(() => {
+    return cartItems.reduce((acc, item) => acc + parseFloat(item.total_price || 0), 0);
+  }, [cartItems]);
 
+  // =========================
+  // Delete cart item
+  // =========================
   const handleDelete = async (id) => {
     if (!window.confirm("Are you sure you want to remove this item?")) return;
-
     try {
       setDeletingId(id);
       await axios.delete(`https://neil-backend-1.onrender.com/cart/${id}`, {
         headers: { Authorization: `Bearer ${accessToken}` },
       });
-      setMyCartProducts((prev) => prev.filter((item) => item.id !== id));
+
+      const updatedCart = cartItems.filter(item => item.id !== id);
+      setCartItems(updatedCart);
+      localStorage.setItem("cart", JSON.stringify(updatedCart));
+      window.location.reload();
     } catch (err) {
       alert("Failed to delete item.");
+      console.error(err);
     } finally {
       setDeletingId(null);
     }
   };
 
-  const subtotal = useMemo(() => {
-    return myCartProducts.reduce(
-      (acc, item) => acc + parseFloat(item.total_price || 0),
-      0
-    );
-  }, [myCartProducts]);
-
-  // 🏠 Fetch user's saved addresses
+  // =========================
+  // Handle order button click
+  // =========================
   const handleOrderClick = async () => {
     setShowAddressModal(true);
     setFetchingAddresses(true);
     try {
-      const res = await axios.get(
-        "https://neil-backend-1.onrender.com/address/my-address",
-        {
-          headers: { Authorization: `Bearer ${accessToken}` },
-        }
-      );
+      const res = await axios.get("https://neil-backend-1.onrender.com/address/my-address", {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
       setAddresses(res.data.addresses || []);
     } catch (err) {
       setAddresses([]);
+      console.error("Failed to fetch addresses:", err);
     } finally {
       setFetchingAddresses(false);
     }
   };
 
-  // ➕ Save new address
+  // =========================
+  // Add new address
+  // =========================
   const handleSaveAddress = async (e) => {
     e.preventDefault();
     try {
@@ -114,26 +113,15 @@ function Cart() {
       await axios.post(
         "https://neil-backend-1.onrender.com/address/new-address",
         newAddress,
-        {
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-            "Content-Type": "application/json",
-          },
-        }
+        { headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" } }
       );
       alert("✅ Address added successfully.");
       setShowNewAddressForm(false);
       setNewAddress({
-        type: "",
-        address_line_1: "",
-        address_line_2: "",
-        city: "",
-        state: "",
-        postal_code: "",
-        country: "",
-        is_default: false,
+        type: "", address_line_1: "", address_line_2: "",
+        city: "", state: "", postal_code: "", country: "USA", is_default: false,
       });
-      handleOrderClick(); // refresh list
+      handleOrderClick(); // refresh addresses
     } catch (err) {
       alert(err.response?.data?.message || "Failed to save address.");
     } finally {
@@ -141,22 +129,45 @@ function Cart() {
     }
   };
 
+  // =========================
+  // Confirm order
+  // =========================
+  const handleConfirmOrder = async () => {
+    if (!selectedShipping || !selectedBilling) return alert("Select shipping and billing addresses");
+
+    try {
+      await axios.post(
+        "https://neil-backend-1.onrender.com/orders/new",
+        {
+          user_id: user.id,
+          items: cartItems,
+          shipping_address_id: selectedShipping,
+          billing_address_id: selectedBilling,
+        },
+        { headers: { Authorization: `Bearer ${accessToken}` } }
+      );
+
+      alert("✅ Order placed successfully!");
+      setCartItems([]);
+      localStorage.removeItem("cart");
+      setShowAddressModal(false);
+      navigate("/orders");
+    } catch (err) {
+      alert("Failed to place order.");
+      console.error(err);
+    }
+  };
+
   return (
-    <div
-      style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}
-    >
+    <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
       <TopBar />
-      <Container
-        className="mt-5 pt-5"
-        style={{ flex: 1, paddingBottom: "100px" }}
-      >
+
+      <Container className="mt-5 pt-5" style={{ flex: 1, paddingBottom: "100px" }}>
         <h3 className="mb-4 fw-bold text-primary">🛒 My Cart</h3>
 
         {loading ? (
-          <div className="text-center mt-5">
-            <Spinner animation="border" />
-          </div>
-        ) : myCartProducts.length === 0 ? (
+          <div className="text-center mt-5"><Spinner animation="border" /></div>
+        ) : cartItems.length === 0 ? (
           <p className="text-muted">Your cart is empty.</p>
         ) : (
           <>
@@ -171,28 +182,19 @@ function Cart() {
                 </tr>
               </thead>
               <tbody>
-                {myCartProducts.map((item, index) => (
+                {cartItems.map((item, index) => (
                   <tr key={item.id}>
                     <td>{index + 1}</td>
                     <td className="d-flex align-items-center gap-3">
-                      <Image
-                        src={item.image}
-                        alt={item.title}
-                        width={60}
-                        height={60}
-                        rounded
-                      />
+                      <Image src={item.image} alt={item.title} width={60} height={60} rounded />
                       <span>{item.title}</span>
                     </td>
                     <td>
-                      {Object.entries(item.sizes || {}).map(
-                        ([size, details]) => (
-                          <div key={size}>
-                            <strong>{size.toUpperCase()}</strong>: {details.qty}{" "}
-                            × ${details.price} = ${details.subtotal}
-                          </div>
-                        )
-                      )}
+                      {Object.entries(item.sizes || {}).map(([size, details]) => (
+                        <div key={size}>
+                          <strong>{size.toUpperCase()}</strong>: {details?.qty} × ${details?.price} = ${details?.subtotal}
+                        </div>
+                      ))}
                     </td>
                     <td className="fw-semibold">${item.total_price}</td>
                     <td className="text-center">
@@ -202,25 +204,13 @@ function Cart() {
                         onClick={() => handleDelete(item.id)}
                         disabled={deletingId === item.id}
                       >
-                        {deletingId === item.id ? (
-                          <Spinner
-                            as="span"
-                            animation="border"
-                            size="sm"
-                            role="status"
-                          />
-                        ) : (
-                          "🗑️ Delete"
-                        )}
+                        {deletingId === item.id ? <Spinner animation="border" size="sm" /> : "🗑️ Delete"}
                       </Button>
                     </td>
                   </tr>
                 ))}
-
                 <tr className="table-secondary fw-bold">
-                  <td colSpan={3} className="text-end">
-                    Subtotal:
-                  </td>
+                  <td colSpan={3} className="text-end">Subtotal:</td>
                   <td colSpan={2}>${subtotal.toFixed(2)}</td>
                 </tr>
               </tbody>
@@ -235,7 +225,9 @@ function Cart() {
         )}
       </Container>
 
-      {/* 🏠 Address Modal */}
+      {/* =========================
+          Address Modal
+          ========================= */}
       <Modal
         show={showAddressModal}
         onHide={() => setShowAddressModal(false)}
@@ -533,15 +525,7 @@ function Cart() {
         </Modal.Footer>
       </Modal>
 
-      <Footer
-        style={{
-          position: "fixed",
-          bottom: 0,
-          left: 0,
-          right: 0,
-          width: "100%",
-        }}
-      />
+      <Footer />
     </div>
   );
 }

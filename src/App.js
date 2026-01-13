@@ -49,9 +49,11 @@ function AppRoutes() {
   return (
     <Routes>
       {/* ---------- PUBLIC ROUTES ---------- */}
-      <Route path='/' element={<Login />} />
+      <Route path='/' element={<UserProducts />} />
+      <Route path='/login' element={<Login />} /> 
       <Route path='/register_organization' element={<RegisterOrganization />} />
-      <Route path='/reset-password' element={<PasswordReset />} />
+      <Route path='/reset-password' element={<PasswordReset />}/>
+      <Route path='/products/:id' element={<UserProduct />} />
 
       {/* ---------- SUPER ADMIN ROUTES ---------- */}
       {user?.role === 'Super Admin' && (
@@ -78,7 +80,7 @@ function AppRoutes() {
           <Route path='/admin/orders/:id' element={<ProtectedRoute><SpecificOrder /></ProtectedRoute>} />
           <Route path='/admin/my-profile' element={<ProtectedRoute><MyProfile1/></ProtectedRoute>}/>
           <Route path='/admin/coupons' element={<ProtectedRoute><Coupons/></ProtectedRoute>}/>
-          <Route path='/admin/coupons/:id' element={<ProtectedRoute><SpecCoupon/></ProtectedRoute>}/>
+          <Route path='/admin/coupons/:id' element={<ProtectedRoute><Coupons/></ProtectedRoute>}/>
         </>
       )}
 
@@ -108,17 +110,42 @@ function AppRoutes() {
         </>
       )}
 
-      {/* ---------- USER ROUTES ---------- */}
-      {["User", "Super Admin", "Admin", "Manager"].includes(user?.role) && (
-        <>
-          <Route path='/products' element={<ProtectedRoute><UserProducts /></ProtectedRoute>} />
-          <Route path='/products/:id' element={<ProtectedRoute><UserProduct /></ProtectedRoute>} />
-          <Route path='/cart' element={<ProtectedRoute><Cart /></ProtectedRoute>} />
-          <Route path='/orders' element={<ProtectedRoute><Orders /></ProtectedRoute>} />
-          <Route path='/my-profile' element={<ProtectedRoute><MyProfile /></ProtectedRoute>} />
-          <Route path="/payment" element={<ProtectedRoute><PaymentPage /></ProtectedRoute>} />
-        </>
-      )}
+<Route
+  path="/cart"
+  element={
+    <ProtectedRoute allowedRoles={["User", "Super Admin", "Admin", "Manager"]}>
+      <Cart />
+    </ProtectedRoute>
+  }
+/>
+
+<Route
+  path="/orders"
+  element={
+    <ProtectedRoute allowedRoles={["User", "Super Admin", "Admin", "Manager"]}>
+      <Orders />
+    </ProtectedRoute>
+  }
+/>
+
+<Route
+  path="/my-profile"
+  element={
+    <ProtectedRoute allowedRoles={["User", "Super Admin", "Admin", "Manager"]}>
+      <MyProfile />
+    </ProtectedRoute>
+  }
+/>
+
+<Route
+  path="/payment"
+  element={
+    <ProtectedRoute allowedRoles={["User", "Super Admin", "Admin", "Manager"]}>
+      <PaymentPage />
+    </ProtectedRoute>
+  }
+/>
+
     </Routes>
   );
 }

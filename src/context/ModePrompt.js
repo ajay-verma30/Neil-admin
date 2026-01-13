@@ -17,7 +17,7 @@ const ModePrompt = ({ onClose }) => {
       if (user.role === "Super Admin") navigate("/admin/dashboard");
       else navigate(`/${user.org_id}/dashboard`);
     } else {
-      navigate("/products");
+      navigate("/");
     }
   };
 

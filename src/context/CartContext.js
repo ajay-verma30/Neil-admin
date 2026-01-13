@@ -1,25 +1,40 @@
-import React, { createContext, useEffect, useState } from "react";
+import React, { createContext, useEffect, useState, useMemo } from "react";
 
 export const CartContext = createContext();
 
 export const CartProvider = ({ children }) => {
   const [cart, setCart] = useState([]);
   const [initialized, setInitialized] = useState(false);
+
+  // Load cart from localStorage
   useEffect(() => {
     const savedCart = localStorage.getItem("cart");
     if (savedCart) {
-      setCart(JSON.parse(savedCart));
+      try {
+        setCart(JSON.parse(savedCart));
+      } catch (e) {
+        console.error("Failed to parse cart", e);
+        setCart([]);
+      }
     }
     setInitialized(true);
   }, []);
+
+  // Save cart to localStorage
   useEffect(() => {
     if (initialized) {
       localStorage.setItem("cart", JSON.stringify(cart));
     }
   }, [cart, initialized]);
 
+  // Derived State: Total count of items in cart
+  const cartCount = useMemo(() => {
+    return cart.reduce((total, item) => total + (Number(item.quantity) || 0), 0);
+  }, [cart]);
+
   const addToCart = (item) => {
     setCart((prevCart) => {
+      // Check if product with same ID and same sizes already exists
       const existingIndex = prevCart.findIndex(
         (i) =>
           i.product_id === item.product_id &&
@@ -28,12 +43,13 @@ export const CartProvider = ({ children }) => {
 
       if (existingIndex !== -1) {
         const updated = [...prevCart];
+        const existingItem = updated[existingIndex];
+        
         updated[existingIndex] = {
-          ...updated[existingIndex],
-          quantity: updated[existingIndex].quantity + item.quantity,
+          ...existingItem,
+          quantity: existingItem.quantity + item.quantity,
           total_price: (
-            parseFloat(updated[existingIndex].total_price) +
-            parseFloat(item.total_price)
+            parseFloat(existingItem.total_price) + parseFloat(item.total_price)
           ).toFixed(2),
         };
         return updated;
@@ -51,7 +67,7 @@ export const CartProvider = ({ children }) => {
   };
 
   return (
-    <CartContext.Provider value={{ cart, addToCart, removeFromCart, clearCart }}>
+    <CartContext.Provider value={{ cart, cartCount, addToCart, removeFromCart, clearCart }}>
       {children}
     </CartContext.Provider>
   );

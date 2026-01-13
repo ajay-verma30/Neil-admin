@@ -5,50 +5,121 @@ import { Row, Col, Container, Form, Button, Alert, Spinner } from "react-bootstr
 import axios from "axios";
 import { AuthContext } from "../../context/AuthContext";
 import { useNavigate, useParams } from "react-router-dom";
+
 const IMAGE_TYPES = ["front", "back", "left", "right"];
-const initialSizeAttribute = {
-    name: "",             
-    adjustment: 0.00,     
-    stock: 0,             
-    id: Date.now(),       
-};
 
 function CreateProducts() {
     const { accessToken, user } = useContext(AuthContext);
-    const { org_id } = useParams(); 
+    const { org_id: urlOrgId } = useParams(); 
     const navigate = useNavigate();
 
+    // --- STATES ---
     const [groups, setGroups] = useState([]);
     const [groupVisibility, setGroupVisibility] = useState([]);
+    const [categories, setCategories] = useState([]);
     const [subCategories, setSubCategories] = useState([]);
+    const [organizations, setOrganizations] = useState([]);
+    
+    // Default Org Logic: Agar Super Admin hai toh URL ya Global, warna User ki apni Org
+    const [selectedOrg, setSelectedOrg] = useState(user.role === "Super Admin" ? (urlOrgId || "") : user.org_id);
     const [selectedCategory, setSelectedCategory] = useState("");
     const [selectedSubCategory, setSelectedSubCategory] = useState("");
-    const [categories, setCategories] = useState([]);
-    const [formData, setFormData] = useState({
-        sku: "",
-        title: "",
-        description: "",
-        price: "", 
-        actual_price:"",
-        productImages: null,
-    });
-    const initialVariant = {
-        color: "",
-        sku: "",
-        images: { front: null, back: null, left: null, right: null },
-        attributes: [{ ...initialSizeAttribute }],
-    };
 
-    const [variants, setVariants] = useState([initialVariant]);
+    const [formData, setFormData] = useState({
+        sku: "", title: "", description: "", price: "", actual_price: "", productImages: null,
+    });
+
+    const [variants, setVariants] = useState([{
+        color: "", sku: "", images: { front: null, back: null, left: null, right: null },
+        attributes: [{ name: "", adjustment: 0, stock: 0, id: Date.now() }],
+    }]);
+
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
     const [success, setSuccess] = useState("");
-    const [organizations, setOrganizations] = useState([]);
-const [selectedOrg, setSelectedOrg] = useState(org_id || "")
 
-    const handleChange = (e) => {
-        setFormData({ ...formData, [e.target.name]: e.target.value });
+    // --- FETCHING LOGIC ---
+
+    // 1. Fetch Organizations (Admin Only)
+    useEffect(() => {
+        if (user.role !== "Super Admin" || !accessToken) return;
+        const fetchOrganizations = async () => {
+            try {
+                const res = await axios.get("https://neil-backend-1.onrender.com/organization/all-organizations", {
+                    headers: { Authorization: `Bearer ${accessToken}` },
+                });
+                if (res.data.success) setOrganizations(res.data.organizations);
+            } catch (err) { console.error("Error fetching organizations:", err); }
+        };
+        fetchOrganizations();
+    }, [accessToken, user.role]);
+
+    // 2. Fetch Categories (Hybrid: Global + Selected Org)
+    useEffect(() => {
+        if (!accessToken) return;
+        const fetchCategories = async () => {
+            try {
+                const res = await axios.get("http://localhost:3000/categories/all", {
+                    headers: { Authorization: `Bearer ${accessToken}` },
+                    params: { org_id: selectedOrg } 
+                });
+                if (res.data.success) setCategories(res.data.categories);
+            } catch (err) { console.error("Error fetching categories:", err); }
+        };
+        fetchCategories();
+    }, [accessToken, selectedOrg]);
+
+useEffect(() => {
+    const fetchSubCategories = async () => {
+        if (!selectedCategory || !accessToken) {
+            setSubCategories([]);
+            return;
+        }
+
+        try {
+            const res = await axios.get("http://localhost:3000/sub-categories/all", {
+                headers: { Authorization: `Bearer ${accessToken}` },
+                params: { 
+                    category_id: selectedCategory, 
+                    org_id: selectedOrg 
+                }
+            });
+
+            const data = res.data.subCategories || res.data.data || [];
+            setSubCategories(data);
+            
+            // Agar purani selected sub-category naye list mein nahi hai, toh reset kar do
+            if (!data.find(sub => sub.id === selectedSubCategory)) {
+                setSelectedSubCategory("");
+            }
+        } catch (err) { 
+            console.error("Sub-category fetch error:", err);
+            setSubCategories([]); 
+        }
     };
+
+    fetchSubCategories();
+}, [selectedCategory, selectedOrg, accessToken]); 
+
+    // 4. Fetch Groups
+    useEffect(() => {
+        if (!accessToken) return;
+        const fetchGroups = async () => {
+            try {
+                const res = await axios.get("https://neil-backend-1.onrender.com/groups/all", {
+                    headers: { Authorization: `Bearer ${accessToken}` },
+                    params: { org_id: selectedOrg },
+                });
+                const fetchedGroups = res.data.groups || [];
+                setGroups(fetchedGroups);
+                setGroupVisibility(fetchedGroups.map((g) => ({ group_id: g.id, is_visible: false })));
+            } catch (err) { console.error(err); }
+        };
+        fetchGroups();
+    }, [accessToken, selectedOrg]);
+
+    // --- HANDLERS ---
+    const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
 
     const handleProductImagesChange = (e) => {
         const files = e.target.files;
@@ -58,97 +129,8 @@ const [selectedOrg, setSelectedOrg] = useState(org_id || "")
             return;
         }
         setFormData({ ...formData, productImages: files });
-        if (error === "Maximum 5 product images allowed") setError("");
     };
 
-const fetchSubCategories = async (categoryId) => {
-    if (!categoryId) {
-        setSubCategories([]);
-        setSelectedSubCategory("");
-        return;
-    }
-    try {
-        const res = await axios.get(
-            "https://neil-backend-1.onrender.com/sub-categories/all",
-            {
-                headers: { Authorization: `Bearer ${accessToken}` },
-                params: { category_id: categoryId, org_id: selectedOrg || org_id }
-            }
-        );
-        setSubCategories(res.data.subCategories || []);
-        setSelectedSubCategory("");
-    } catch (err) {
-        setSubCategories([]);
-    }
-};
-
-
-    useEffect(() => {
-        if (!accessToken) return;
-        const fetchGroups = async () => {
-            try {
-                const res = await axios.get("https://neil-backend-1.onrender.com/groups/all", {
-                    headers: { Authorization: `Bearer ${accessToken}` },
-                    params: { org_id },
-                });
-                setGroups(res.data.groups || []);
-                setGroupVisibility(
-                    res.data.groups.map((g) => ({ group_id: g.id, is_visible: false }))
-                );
-            } catch (err) {
-            }
-        };
-        fetchGroups();
-    }, [accessToken, org_id]);
-
-    useEffect(() => {
-    if (!accessToken) return;
-
-    const fetchCategories = async () => {
-        try {
-            const res = await axios.get("https://neil-backend-1.onrender.com/categories/all", {
-                headers: { Authorization: `Bearer ${accessToken}` },
-                params: user.role === "Super Admin" ? {} : { org_id } 
-            });
-            if (res.data.success) {
-                setCategories(res.data.categories);
-            }
-        } catch (err) {
-            console.error("Error fetching categories:", err);
-        }
-    };
-
-    fetchCategories();
-}, [accessToken, org_id, user.role]);
-
- useEffect(() => {
-    if (user.role !== "Super Admin" || !accessToken) return;
-
-    const fetchOrganizations = async () => {
-        try {
-            const res = await axios.get("https://neil-backend-1.onrender.com/organization/all-organizations", {
-                headers: { Authorization: `Bearer ${accessToken}` },
-            });
-
-            if (res.data.success && res.data.organizations) {
-                setOrganizations(res.data.organizations);
-            }
-        } catch (err) {
-            console.error("Error fetching organizations:", err);
-        }
-    };
-
-    fetchOrganizations();
-}, [accessToken, user.role]);
-
-
-    const toggleGroupVisibility = (groupId) => {
-        setGroupVisibility((prev) =>
-            prev.map((gv) =>
-                gv.group_id === groupId ? { ...gv, is_visible: !gv.is_visible } : gv
-            )
-        );
-    };
     const handleVariantChange = (index, e) => {
         const updated = [...variants];
         updated[index][e.target.name] = e.target.value;
@@ -160,88 +142,53 @@ const fetchSubCategories = async (categoryId) => {
         updated[index].images[type] = e.target.files;
         setVariants(updated);
     };
+
     const handleAttributeChange = (variantIndex, attrId, e) => {
         const updatedVariants = [...variants];
-        const variant = updatedVariants[variantIndex];
-        
-        const attrIndex = variant.attributes.findIndex(attr => attr.id === attrId);
-        
+        const attrIndex = updatedVariants[variantIndex].attributes.findIndex(attr => attr.id === attrId);
         if (attrIndex !== -1) {
             let value = e.target.value;
-            if (e.target.name === 'adjustment') {
-                value = parseFloat(value) || 0.00;
-            } else if (e.target.name === 'stock') {
-                value = parseInt(value) || 0;
-            }
-            variant.attributes[attrIndex][e.target.name] = value;
+            if (e.target.name === 'adjustment') value = parseFloat(value) || 0;
+            if (e.target.name === 'stock') value = parseInt(value) || 0;
+            updatedVariants[variantIndex].attributes[attrIndex][e.target.name] = value;
             setVariants(updatedVariants);
         }
     };
 
     const addAttribute = (variantIndex) => {
         const updatedVariants = [...variants];
-        updatedVariants[variantIndex].attributes.push({ 
-            ...initialSizeAttribute, 
-            id: Date.now() + Math.random() 
-        });
+        updatedVariants[variantIndex].attributes.push({ name: "", adjustment: 0, stock: 0, id: Date.now() + Math.random() });
         setVariants(updatedVariants);
     };
 
-    
-
     const removeAttribute = (variantIndex, attrId) => {
         const updatedVariants = [...variants];
-        const variant = updatedVariants[variantIndex];
-        
-        if (variant.attributes.length > 1) {
-            variant.attributes = variant.attributes.filter(attr => attr.id !== attrId);
+        if (updatedVariants[variantIndex].attributes.length > 1) {
+            updatedVariants[variantIndex].attributes = updatedVariants[variantIndex].attributes.filter(attr => attr.id !== attrId);
             setVariants(updatedVariants);
         }
     };
 
-
-    const addVariant = () => {
-        setVariants([
-            ...variants,
-            { 
-                ...initialVariant, 
-                attributes: [{ ...initialSizeAttribute }], 
-                images: { front: null, back: null, left: null, right: null } 
-            },
-        ]);
-    };
-
-    const removeVariant = (index) => {
-        if (variants.length > 1) setVariants(variants.filter((_, i) => i !== index));
-    };
+    const addVariant = () => setVariants([...variants, { color: "", sku: "", images: { front: null, back: null, left: null, right: null }, attributes: [{ name: "", adjustment: 0, stock: 0, id: Date.now() }] }]);
+    const removeVariant = (index) => { if (variants.length > 1) setVariants(variants.filter((_, i) => i !== index)); };
+    const toggleGroupVisibility = (groupId) => setGroupVisibility(prev => prev.map(gv => gv.group_id === groupId ? { ...gv, is_visible: !gv.is_visible } : gv));
 
     const resetForm = () => {
-        setFormData({ sku: "", title: "", description: "", price: "", productImages: null });
-        setVariants([{ ...initialVariant }]);
+        setFormData({ sku: "", title: "", description: "", price: "", actual_price: "", productImages: null });
+        setVariants([{ color: "", sku: "", images: { front: null, back: null, left: null, right: null }, attributes: [{ name: "", adjustment: 0, stock: 0, id: Date.now() }] }]);
         setSelectedCategory("");
         setSelectedSubCategory("");
-        document.querySelectorAll("input[type=file]").forEach((input) => (input.value = ""));
+        document.querySelectorAll("input[type=file]").forEach(input => input.value = "");
     };
 
+    // --- SUBMIT ---
     const handleSubmit = async (e) => {
         e.preventDefault();
-
-        if (!selectedCategory)
-            return setError("Please select a category.");
-
-        if (!formData.title || !formData.description || !formData.sku || !formData.price)
-            return setError("Please fill all required product fields.");
-
-        if (variants.some((v) => !v.sku))
-            return setError("All variants must have a SKU.");
-
-        if (variants.some(v => v.attributes.some(a => !a.name))) {
-            return setError("All size attributes must have a name (e.g., S, M, L).");
-        }
-
+        if (!selectedCategory || !selectedSubCategory) return setError("Category and Sub-Category are required.");
+        
+        setLoading(true);
         setError("");
         setSuccess("");
-        setLoading(true);
 
         try {
             const data = new FormData();
@@ -249,336 +196,199 @@ const fetchSubCategories = async (categoryId) => {
             data.append("description", formData.description);
             data.append("sku", formData.sku);
             data.append("category_id", selectedCategory);
-if (selectedSubCategory) data.append("sub_category_id", selectedSubCategory);
-if (user.role === "Super Admin") {
-    if (!selectedOrg) return setError("Please select an organization.");
-    data.append("org_id", selectedOrg);
-} else {
-    data.append("org_id", org_id);
-}
+            data.append("sub_category_id", selectedSubCategory);
+            data.append("org_id", selectedOrg || ""); 
             data.append("price", formData.price);
             if (formData.actual_price) data.append("actual_price", formData.actual_price);
             data.append("group_visibility", JSON.stringify(groupVisibility));
-            if (formData.productImages)
-                Array.from(formData.productImages).forEach((file) => data.append("productImages", file));
+
+            if (formData.productImages) Array.from(formData.productImages).forEach(file => data.append("productImages", file));
 
             variants.forEach((v, index) => {
-                IMAGE_TYPES.forEach((type) => {
-                    const files = v.images[type];
-                    if (files && files.length > 0)
-                        Array.from(files).forEach((file) =>
-                            data.append(`variant-${index}-${type}`, file)
-                        );
+                IMAGE_TYPES.forEach(type => {
+                    if (v.images[type]) Array.from(v.images[type]).forEach(file => data.append(`variant-${index}-${type}`, file));
                 });
             });
 
-            const variantsPayload = variants.map((v) => ({
+            const variantsPayload = variants.map(v => ({
                 color: v.color,
                 sku: v.sku,
-                sizes: v.attributes.map(attr => ({ 
-                    name: attr.name, 
-                    adjustment: attr.adjustment, 
-                    stock: attr.stock 
-                }))
+                sizes: v.attributes.map(a => ({ name: a.name, adjustment: a.adjustment, stock: a.stock }))
             }));
             data.append("variants", JSON.stringify(variantsPayload));
 
-            const response = await axios.post("https://neil-backend-1.onrender.com/products/new", data, {
+            const res = await axios.post("https://neil-backend-1.onrender.com/products/new", data, {
                 headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "multipart/form-data" },
             });
 
-            setSuccess(response.data.message || "Product added successfully!");
-            resetForm();
-            if (response.status === 201) {
-                if (user.role === "Super Admin") {
-                    navigate("/admin/products");
-                } else {
-                    navigate(`/${user.org_id}/products`);
-                }
-            }
+            setSuccess("Product created successfully!");
+            setTimeout(() => navigate(-1), 1500);
         } catch (err) {
-
-            setError(err.response?.data?.message || "Something went wrong while adding the product.");
+            setError(err.response?.data?.message || "Server Error");
         } finally {
             setLoading(false);
         }
     };
 
-    const handleSubCategories = () =>{
-        if(user.role === "Super Admin"){
-            navigate('/admin/sub-categories')
-        }
-        else{
-            navigate(`/${org_id}/sub-categories`)
-        }
-    }
-
     return (
         <>
             <TopBar />
-            <Row>
-                <Col xs={2} md={2}><Sidebar /></Col>
-                <Col xs={10} className="main-content py-3">
-                    <Container fluid className="form-box">
-                        <Form className="product-form" onSubmit={handleSubmit}>
-                            <h4 className="mb-3 fw-bold">Add Product</h4>
+            <Row className="m-0">
+                <Col xs={2} className="p-0"><Sidebar /></Col>
+                <Col xs={10} className="main-content py-4 bg-light min-vh-100">
+                    <Container fluid className="p-4 bg-white shadow-sm rounded">
+                        <Form onSubmit={handleSubmit}>
+                            <div className="d-flex justify-content-between align-items-center mb-4">
+                                <h4 className="fw-bold text-dark m-0">Create New Product</h4>
+                                <Button variant="outline-secondary" size="sm" onClick={() => navigate(-1)}>Back</Button>
+                            </div>
 
                             {error && <Alert variant="danger" onClose={() => setError("")} dismissible>{error}</Alert>}
-                            {success && <Alert variant="success" onClose={() => setSuccess("")} dismissible>{success}</Alert>}
+                            {success && <Alert variant="success">{success}</Alert>}
 
+                            {/* --- Category & Org Section --- */}
+                            <div className="p-3 border rounded mb-4" style={{ backgroundColor: "#f8f9fa" }}>
+                                <Row>
+                                    {user.role === "Super Admin" && (
+                                        <Col md={4}>
+                                            <Form.Group className="mb-3">
+                                                <Form.Label className="fw-bold">Organization Scope</Form.Label>
+                                                <Form.Select value={selectedOrg} onChange={(e) => { 
+                                                    setSelectedOrg(e.target.value); 
+                                                    setSelectedCategory(""); 
+                                                    setSelectedSubCategory(""); 
+                                                }}>
+                                                    <option value="">Global (Default)</option>
+                                                    {organizations.map(org => <option key={org.id} value={org.id}>{org.title}</option>)}
+                                                </Form.Select>
+                                            </Form.Group>
+                                        </Col>
+                                    )}
+                                    <Col md={user.role === "Super Admin" ? 4 : 6}>
+                                        <Form.Group className="mb-3">
+                                            <Form.Label className="fw-bold">Category <span className="text-danger">*</span></Form.Label>
+                                            <Form.Select 
+                                                value={selectedCategory} 
+                                                onChange={(e) => { 
+                                                    setSelectedCategory(e.target.value); 
+                                                    setSelectedSubCategory(""); 
+                                                }} 
+                                                required
+                                            >
+                                                <option value="">Select Category</option>
+                                                {categories.map(cat => <option key={cat.id} value={cat.id}>{cat.title}</option>)}
+                                            </Form.Select>
+                                        </Form.Group>
+                                    </Col>
+                                    <Col md={user.role === "Super Admin" ? 4 : 6}>
+                                        <Form.Group className="mb-3">
+                                            <Form.Label className="fw-bold">Sub-Category <span className="text-danger">*</span></Form.Label>
+                                            <Form.Select 
+                                                value={selectedSubCategory} 
+                                                onChange={(e) => setSelectedSubCategory(e.target.value)} 
+                                                disabled={!subCategories.length}
+                                                required
+                                            >
+                                                <option value="">{subCategories.length > 0 ? "Select Sub-Category" : "No Options (Select Category first)"}</option>
+                                                {subCategories.map(sub => <option key={sub.id} value={sub.id}>{sub.title}</option>)}
+                                            </Form.Select>
+                                        </Form.Group>
+                                    </Col>
+                                </Row>
+                            </div>
+
+                            {/* --- Basic Details --- */}
                             <Row>
-                                <Col xs={12} md={6}>
+                                <Col md={8}>
                                     <Form.Group className="mb-3">
-                                        <Form.Label>Product SKU</Form.Label>
-                                        <Form.Control
-                                            name="sku"
-                                            value={formData.sku}
-                                            onChange={handleChange}
-                                            placeholder="e.g. LOGO-TSHIRT-001"
-                                            required
-                                        />
+                                        <Form.Label className="fw-bold">Product Title</Form.Label>
+                                        <Form.Control name="title" value={formData.title} onChange={handleChange} placeholder="Enter product name" required />
                                     </Form.Group>
                                 </Col>
-
-                                <Col xs={12} md={3}>
+                                <Col md={4}>
                                     <Form.Group className="mb-3">
-    <Form.Label>Category</Form.Label>
-    <Form.Select
-        value={selectedCategory}
-        onChange={(e) => {
-            setSelectedCategory(e.target.value);
-            fetchSubCategories(e.target.value);
-        }}
-        required
-    >
-        <option value="">Select a category</option>
-        {categories.map((cat) => (
-            <option key={cat.id} value={cat.id}>
-                {cat.title}
-            </option>
-        ))}
-    </Form.Select>
-</Form.Group>
-
-                                </Col>
-
-                                <Col xs={12} md={3}>
-                                    <Form.Group className="mb-3">
-    <Form.Label>Sub-Category (Optional)</Form.Label>
-    <Form.Select
-        value={selectedSubCategory}
-        onChange={(e) => setSelectedSubCategory(e.target.value)}
-        disabled={!selectedCategory || subCategories.length === 0}
-    >
-        <option value="">Select Sub-Category</option>
-        {subCategories.map((sub) => (
-            <option key={sub.id} value={sub.id}>
-                {sub.title}
-            </option>
-        ))}
-    </Form.Select>
-    {!subCategories.length && selectedCategory && (
-        <Button
-            variant="outline-secondary"
-            size="sm"
-            className="mt-2"
-            onClick={handleSubCategories}
-        >
-            + Add Sub-Category
-        </Button>
-    )}
-</Form.Group>
-
+                                        <Form.Label className="fw-bold">Base SKU</Form.Label>
+                                        <Form.Control name="sku" value={formData.sku} onChange={handleChange} placeholder="e.g. MUG-001" required />
+                                    </Form.Group>
                                 </Col>
                             </Row>
+
+                            <Form.Group className="mb-3">
+                                <Form.Label className="fw-bold">Description</Form.Label>
+                                <Form.Control name="description" as="textarea" rows={4} value={formData.description} onChange={handleChange} required />
+                            </Form.Group>
 
                             <Row>
-                                <Col xs={4} md={4}>
-                                {user.role === "Super Admin" && (
-    <Form.Group className="mb-3">
-        <Form.Label>Organization</Form.Label>
-        <Form.Select
-            value={selectedOrg}
-            onChange={(e) => setSelectedOrg(e.target.value)}
-            required
-        >
-            <option value="">Select Organization</option>
-            {organizations.map((org) => (
-                <option key={org.id} value={org.id}>{org.title}</option>
-            ))}
-        </Form.Select>
-    </Form.Group>
-)}
-
-                                </Col>
+                                <Col md={6}><Form.Group className="mb-3"><Form.Label className="fw-bold">Selling Price</Form.Label><Form.Control type="number" name="price" value={formData.price} onChange={handleChange} required /></Form.Group></Col>
+                                <Col md={6}><Form.Group className="mb-3"><Form.Label className="fw-bold">MRP Price</Form.Label><Form.Control type="number" name="actual_price" value={formData.actual_price} onChange={handleChange} /></Form.Group></Col>
                             </Row>
 
-                            <div className="group-visibility mt-4">
-                                <h5>Group Visibility</h5>
-                                <div className="d-flex flex-wrap gap-3">
-                                    {groups.map((g) => {
-                                        const gv = groupVisibility.find((v) => v.group_id === g.id);
-                                        return (
-                                            <Form.Check
-                                                key={g.id}
-                                                type="checkbox"
-                                                label={g.title}
-                                                checked={gv?.is_visible || false}
-                                                onChange={() => toggleGroupVisibility(g.id)}
-                                            />
-                                        );
-                                    })}
+                            <Form.Group className="mb-4">
+                                <Form.Label className="fw-bold">Main Product Images</Form.Label>
+                                <Form.Control type="file" multiple onChange={handleProductImagesChange} />
+                            </Form.Group>
+
+                            {/* --- Visibility Section --- */}
+                            <div className="mb-5 p-3 border rounded bg-light">
+                                <h6 className="fw-bold mb-3">Group Visibility</h6>
+                                <div className="d-flex gap-4 flex-wrap">
+                                    {groups.length > 0 ? groups.map(g => (
+                                        <Form.Check key={g.id} type="checkbox" label={g.title} 
+                                            checked={groupVisibility.find(v => v.group_id === g.id)?.is_visible || false}
+                                            onChange={() => toggleGroupVisibility(g.id)} 
+                                        />
+                                    )) : <span className="text-muted small">No customer groups found.</span>}
                                 </div>
                             </div>
 
-                            <Form.Group className="mb-3 mt-3">
-                                <Form.Label>Title</Form.Label>
-                                <Form.Control name="title" value={formData.title} onChange={handleChange} placeholder="Product title" required />
-                            </Form.Group>
-
-                            <Form.Group className="mb-3">
-                                <Form.Label>Description</Form.Label>
-                                <Form.Control name="description" value={formData.description} onChange={handleChange} as="textarea" rows={4} placeholder="Product description..." required />
-                            </Form.Group>
-
-                            <Row>
-                                <Col xs={6} md={6}>
-                                                            <Form.Group className="mb-3">
-                                <Form.Label>Base Price</Form.Label>
-                                <Form.Control name="price" value={formData.price} onChange={handleChange} type="number" step="0.01" min="0" placeholder="Base Price" required />
-                            </Form.Group>
-                                </Col>
-                                <Col xs={6} md={6}>
-                                                            <Form.Group className="mb-3">
-                                <Form.Label>Actual Price</Form.Label>
-                                <Form.Control name="actual_price" value={formData.actual_price} onChange={handleChange} type="number" step="0.01" min="0" placeholder="Actual Price Price" />
-                            </Form.Group>
-                                </Col>
-                            </Row>
-
-                            <Form.Group className="mb-3">
-                                <Form.Label>Upload Product Images (Max 5)</Form.Label>
-                                <Form.Control type="file" multiple accept="image/*" onChange={handleProductImagesChange} id="product-images-input" />
-                            </Form.Group>
-
-                            <div className="variant-section mt-4 mb-3">
-                                <h5 className="fw-bold mb-3">Product Variants</h5>
-                                {variants.map((variant, index) => (
-                                    <div key={index} className="variant-row border p-3 mb-3 rounded">
-                                        <Row className="align-items-end mb-3">
-                                            <Col md={4}>
-                                                <Form.Group>
-                                                    <Form.Label>Color</Form.Label>
-                                                    <Form.Control
-                                                        name="color"
-                                                        value={variant.color}
-                                                        onChange={(e) => handleVariantChange(index, e)}
-                                                    />
-                                                </Form.Group>
-                                            </Col>
-
-                                            <Col md={6}>
-                                                <Form.Group>
-                                                    <Form.Label>Variant SKU (Required)</Form.Label>
-                                                    <Form.Control
-                                                        name="sku"
-                                                        value={variant.sku}
-                                                        onChange={(e) => handleVariantChange(index, e)}
-                                                        required
-                                                    />
-                                                </Form.Group>
-                                            </Col>
-
-                                            <Col md={2}>
-                                                <Button
-                                                    variant="danger"
-                                                    size="sm"
-                                                    onClick={() => removeVariant(index)}
-                                                    disabled={variants.length === 1}
-                                                >
-                                                    Remove Variant
-                                                </Button>
-                                            </Col>
-                                        </Row>
-
-
-                                        {/* --- NEW: Size, Price Adjustment, and Stock Section --- */}
-                                        <div className="size-attributes-section border p-3 mt-3 rounded bg-light">
-                                            <h6 className="fw-bold mb-3">Size & Inventory Attributes</h6>
-
-                                            {variant.attributes.map((attr, attrIndex) => (
-                                                <Row key={attr.id} className="mb-2 align-items-center">
-                                                    <Col md={3}>
-                                                        <Form.Control
-                                                            name="name"
-                                                            value={attr.name}
-                                                            onChange={(e) => handleAttributeChange(index, attr.id, e)}
-                                                            placeholder="Size (e.g., S, XL, 32)"
-                                                            required
-                                                        />
-                                                    </Col>
-                                                    <Col md={3}>
-                                                        <Form.Control
-                                                            type="number"
-                                                            name="adjustment"
-                                                            value={attr.adjustment}
-                                                            onChange={(e) => handleAttributeChange(index, attr.id, e)}
-                                                            step="0.01"
-                                                            min="0"
-                                                            placeholder="Price Adjustment"
-                                                        />
-                                                        <Form.Text className="text-muted">
-                                                            Added to Base Price.
-                                                        </Form.Text>
-                                                    </Col>
-                                                    <Col md={3}>
-                                                        <Form.Control
-                                                            type="number"
-                                                            name="stock"
-                                                            value={attr.stock}
-                                                            onChange={(e) => handleAttributeChange(index, attr.id, e)}
-                                                            min="0"
-                                                            placeholder="Stock Quantity"
-                                                            required
-                                                        />
-                                                    </Col>
-                                                    <Col md={3}>
-                                                        <Button
-                                                            variant="outline-danger"
-                                                            size="sm"
-                                                            onClick={() => removeAttribute(index, attr.id)}
-                                                            disabled={variant.attributes.length === 1}
-                                                        >
-                                                            Remove Size
-                                                        </Button>
-                                                    </Col>
-                                                </Row>
-                                            ))}
-
-                                            <Button variant="secondary" size="sm" onClick={() => addAttribute(index)} className="mt-2">
-                                                + Add Size Attribute
-                                            </Button>
-                                        </div>
-                                        {/* --- END: NEW Size, Price Adjustment, and Stock Section --- */}
-
-                                        <Row className="mb-3 mt-3">
-                                            {IMAGE_TYPES.map((type) => (
-                                                <Col md={3} key={type}>
-                                                    <Form.Group>
-                                                        <Form.Label>{type.charAt(0).toUpperCase() + type.slice(1)} View</Form.Label>
-                                                        <Form.Control type="file" accept="image/*" multiple onChange={(e) => handleVariantImageChange(index, type, e)} className="variant-image-input" />
-                                                    </Form.Group>
-                                                </Col>
-                                            ))}
-                                        </Row>
-                                    </div>
-                                ))}
-                                <Button variant="outline-primary" size="sm" onClick={addVariant}>+ Add Variant</Button>
+                            {/* --- Variants Section --- */}
+                            <div className="d-flex justify-content-between align-items-center mb-3">
+                                <h5 className="fw-bold m-0 text-primary">Color Variants</h5>
+                                <Button variant="primary" size="sm" onClick={addVariant}>+ Add Variant</Button>
                             </div>
 
-                            <Button variant="primary" type="submit" disabled={loading}>
-                                {loading ? <><Spinner animation="border" size="sm" className="me-2" /> Saving...</> : "Add Product"}
-                            </Button>
+                            {variants.map((variant, index) => (
+                                <div key={index} className="border p-4 mb-4 rounded bg-white shadow-sm position-relative">
+                                    {variants.length > 1 && (
+                                        <Button variant="danger" size="sm" className="position-absolute top-0 end-0 m-2" onClick={() => removeVariant(index)}>Remove</Button>
+                                    )}
+                                    <Row>
+                                        <Col md={6}><Form.Group className="mb-3"><Form.Label className="small fw-bold">Color Name</Form.Label><Form.Control name="color" value={variant.color} onChange={(e) => handleVariantChange(index, e)} placeholder="Red, Blue, etc." /></Form.Group></Col>
+                                        <Col md={6}><Form.Group className="mb-3"><Form.Label className="small fw-bold">Variant SKU <span className="text-danger">*</span></Form.Label><Form.Control name="sku" value={variant.sku} onChange={(e) => handleVariantChange(index, e)} required /></Form.Group></Col>
+                                    </Row>
+
+                                    <div className="mt-3 bg-light p-3 rounded">
+                                        <h6 className="fw-bold small mb-3">Sizes, Stock & Pricing</h6>
+                                        {variant.attributes.map((attr) => (
+                                            <Row key={attr.id} className="mb-2 align-items-center">
+                                                <Col md={3}><Form.Control placeholder="Size" name="name" value={attr.name} onChange={(e) => handleAttributeChange(index, attr.id, e)} required /></Col>
+                                                <Col md={3}><Form.Control type="number" placeholder="+/- Price" name="adjustment" value={attr.adjustment} onChange={(e) => handleAttributeChange(index, attr.id, e)} /></Col>
+                                                <Col md={3}><Form.Control type="number" placeholder="Stock" name="stock" value={attr.stock} onChange={(e) => handleAttributeChange(index, attr.id, e)} required /></Col>
+                                                <Col md={2}><Button variant="link" className="text-danger p-0" onClick={() => removeAttribute(index, attr.id)}>Remove</Button></Col>
+                                            </Row>
+                                        ))}
+                                        <Button variant="link" size="sm" className="p-0 text-decoration-none" onClick={() => addAttribute(index)}>+ Add size</Button>
+                                    </div>
+
+                                    <Row className="mt-4">
+                                        {IMAGE_TYPES.map(type => (
+                                            <Col md={3} key={type}>
+                                                <Form.Group>
+                                                    <Form.Label className="small text-uppercase">{type} View</Form.Label>
+                                                    <Form.Control type="file" size="sm" onChange={(e) => handleVariantImageChange(index, type, e)} />
+                                                </Form.Group>
+                                            </Col>
+                                        ))}
+                                    </Row>
+                                </div>
+                            ))}
+
+                            <div className="mt-5 border-top pt-4 text-end">
+                                <Button variant="light" className="me-3" onClick={resetForm} disabled={loading}>Reset</Button>
+                                <Button variant="primary" type="submit" size="lg" disabled={loading} className="px-5">
+                                    {loading ? <Spinner animation="border" size="sm" className="me-2" /> : "🚀 Publish Product"}
+                                </Button>
+                            </div>
                         </Form>
                     </Container>
                 </Col>

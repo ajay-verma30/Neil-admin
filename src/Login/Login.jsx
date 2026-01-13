@@ -1,11 +1,12 @@
 import React, { useState, useContext } from "react";
 import { Container, Row, Col, Card, Form, Button, Alert, Spinner } from "react-bootstrap";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { AuthContext } from "../context/AuthContext";
 import "./Login.css";
 
 function Login() {
   const navigate = useNavigate();
+  const location = useLocation(); 
   const { login } = useContext(AuthContext);
 
   const [email, setEmail] = useState("");
@@ -13,6 +14,8 @@ function Login() {
   const [errorMsg, setErrorMsg] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
   const [loading, setLoading] = useState(false);
+
+  const redirectPath = location.state?.redirectTo;
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -30,14 +33,18 @@ function Login() {
       if (res.success) {
         setSuccessMsg("Login successful! Redirecting...");
 
-        // Redirect based on role
         setTimeout(() => {
-          if (res.role === "Super Admin") {
-            navigate("/admin/dashboard");
-          } else if(res.role === "Admin" || res.role === "Manager"){
-            navigate(`/${res.org_id}/dashboard`);
-          }else{
-            navigate(`/products`);
+          if (redirectPath) {
+            navigate(redirectPath);
+          } 
+          else {
+            if (res.role === "Super Admin") {
+              navigate("/admin/dashboard");
+            } else if (res.role === "Admin" || res.role === "Manager") {
+              navigate(`/${res.org_id}/dashboard`);
+            } else {
+              navigate(`/`);
+            }
           }
         }, 1000);
       } else {
@@ -62,7 +69,9 @@ function Login() {
                   Welcome Back 👋
                 </h3>
                 <p className="text-center text-muted mb-4">
-                  Please log in to access your dashboard.
+                  {redirectPath 
+                    ? "Please log in to continue your purchase." 
+                    : "Please log in to access your dashboard."}
                 </p>
 
                 {errorMsg && <Alert variant="danger">{errorMsg}</Alert>}
@@ -76,6 +85,7 @@ function Login() {
                       placeholder="Enter your email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
+                      required
                     />
                   </Form.Group>
 
@@ -86,6 +96,7 @@ function Login() {
                       placeholder="Enter your password"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
+                      required
                     />
                   </Form.Group>
 
@@ -114,15 +125,6 @@ function Login() {
                     </Button>
                   </div>
                 </Form>
-
-                {/* <div className="text-center mt-4">
-                  <p className="text-muted">
-                    Forgot password?{" "}
-                    <span className="text-danger fw-semibold" style={{ cursor: "pointer" }}>
-                      Reset
-                    </span>
-                  </p>
-                </div> */}
               </Card.Body>
             </Card>
           </Col>

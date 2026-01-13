@@ -4,9 +4,11 @@ import { CardElement, useStripe, useElements } from "@stripe/react-stripe-js";
 import axios from "axios";
 import { AuthContext } from "../../context/AuthContext";
 import { Spinner, Container, Card, Button } from "react-bootstrap";
+import { CartContext } from "../../context/CartContext";
 
 function PaymentPage() {
   const { accessToken, user } = useContext(AuthContext);
+  const { setCartItems } = useContext(CartContext);
   const navigate = useNavigate();
   const location = useLocation();
   const stripe = useStripe();
@@ -66,7 +68,13 @@ function PaymentPage() {
             },
             { headers: { Authorization: `Bearer ${accessToken}` } }
           );
-          if (res.data.success) { navigate("/orders"); }
+          if (res.data.success) {
+             localStorage.removeItem('cart');
+             if (setCartItems) {
+          setCartItems([]);
+      }
+             window.location.href = "/orders";
+            }
         }
       }
     } catch (err) {

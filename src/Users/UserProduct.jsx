@@ -1,24 +1,9 @@
-import React, { useEffect, useState, useContext, useMemo, useRef } from "react";
+import React, { useEffect, useState, useMemo, useRef, useContext } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
 import html2canvas from "html2canvas";
-import {
-  Container,
-  Row,
-  Col,
-  Card,
-  Spinner,
-  Alert,
-  Badge,
-  Button,
-  Form,
-} from "react-bootstrap";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import {
-  faCartPlus,
-  faArrowLeft,
-  faCheckCircle,
-} from "@fortawesome/free-solid-svg-icons";
+import { Container, Row, Col, Spinner, Alert, Button, Form, Image } from "react-bootstrap";
+
 import TopBar from "../Components/TopBar/TopBar";
 import Footer from "./Footer";
 import { AuthContext } from "../context/AuthContext";
@@ -27,513 +12,363 @@ import { CartContext } from "../context/CartContext";
 function UserProduct() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { accessToken, user } = useContext(AuthContext);
+  const { user, accessToken } = useContext(AuthContext);
   const { addToCart } = useContext(CartContext);
+const [logoDropdownOpen, setLogoDropdownOpen] = useState(false);
   const previewRef = useRef(null);
 
   const [product, setProduct] = useState(null);
-  const [logos, setLogos] = useState([]);
-  const [selectedVariantId, setSelectedVariantId] = useState(null);
-  const [selectedView, setSelectedView] = useState("front");
-  const [selectedLogoId, setSelectedLogoId] = useState(null);
-  const [selectedLogoVariantId, setSelectedLogoVariantId] = useState(null);
-  const [selectedPlacementIds, setSelectedPlacementIds] = useState([]);
-  const [mainImageUrl, setMainImageUrl] = useState("");
+  const [variantId, setVariantId] = useState(null);
+  const [imageUrl, setImageUrl] = useState("");
+  const [currentView, setCurrentView] = useState("front");
+  const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+
+  const [qty, setQty] = useState({});
+  const [previewSize, setPreviewSize] = useState({ w: 0, h: 0 });
+
+  const [selectedLogos, setSelectedLogos] = useState([]);
+  const [selectedPlacements, setSelectedPlacements] = useState({});
+  
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [message, setMessage] = useState("");
-  const [quantities, setQuantities] = useState({});
-  const [sizeAttributes, setSizeAttributes] = useState([]);
-  const [previewDimensions, setPreviewDimensions] = useState({
-    width: 0,
-    height: 0,
-  });
+  const [processing, setProcessing] = useState(false);
+  const [msg, setMsg] = useState("");
 
-  const productVariant = useMemo(
-    () =>
-      product?.variants?.find(
-        (v) => String(v.id) === String(selectedVariantId)
-      ) || null,
-    [product, selectedVariantId]
-  );
+  const variant = useMemo(() => product?.variants?.find(v => v.id === variantId), [product, variantId]);
 
-  const selectedLogo = useMemo(
-    () => logos.find((l) => String(l.id) === String(selectedLogoId)) || null,
-    [logos, selectedLogoId]
-  );
+  const logos = useMemo(() => {
+    if (!variant) return [];
+    const map = {};
+    variant.placements.forEach(p => { if (p.logo) map[p.logo.id] = p.logo; });
+    return Object.values(map);
+  }, [variant]);
 
-  const selectedLogoVariant = useMemo(
-    () =>
-      selectedLogo?.variants?.find(
-        (v) => String(v.id) === String(selectedLogoVariantId)
-      ) || null,
-    [selectedLogo, selectedLogoVariantId]
-  );
-
-  const viewPlacements = productVariant?.placements || [];
-  const allSizes = useMemo(
-    () => sizeAttributes.map((attr) => attr.name.toLowerCase()),
-    [sizeAttributes]
-  );
-
-  const { totalPrice, basePrice } = useMemo(() => {
-    const price = Number(productVariant?.price ?? product?.price ?? 0);
-    const finalPriceMap = sizeAttributes.reduce((acc, attr) => {
-      acc[attr.name.toLowerCase()] = Number(attr.final_price);
-      return acc;
-    }, {});
+  const totalPrice = useMemo(() => {
+    if (!variant || !product) return 0;
     let total = 0;
-    Object.entries(quantities).forEach(([size, qty]) => {
-      if (qty > 0) {
-        const sizePrice = finalPriceMap[size.toLowerCase()] ?? price;
-        total += sizePrice * qty;
-      }
+    variant.attributes.forEach(a => {
+      const q = qty[a.name] || 0;
+      total += (Number(product.price) + Number(a.adjustment || 0)) * q;
     });
-    return { totalPrice: total, basePrice: price };
-  }, [product, productVariant, quantities, sizeAttributes]);
+    return total;
+  }, [qty, variant, product]);
 
   useEffect(() => {
-    if (!id || !accessToken) return;
-    const fetchData = async () => {
+    (async () => {
       try {
-        setLoading(true);
-        const prodRes = await axios.get(
-          `https://neil-backend-1.onrender.com/products/${id}`,
-          {
-            headers: { Authorization: `Bearer ${accessToken}` },
-          }
-        );
-        const prod = prodRes.data.product;
-        setProduct(prod);
-
-        if (prod.variants?.length > 0) {
-          const firstV = prod.variants[0];
-          setSelectedVariantId(firstV.id);
-          setSizeAttributes(firstV.attributes || []);
-          setQuantities(
-            (firstV.attributes || []).reduce(
-              (acc, a) => ({ ...acc, [a.name.toLowerCase()]: 0 }),
-              {}
-            )
-          );
-          setMainImageUrl(
-            firstV.images?.find((i) => i.type?.toLowerCase() === "front")
-              ?.url ||
-              firstV.images?.[0]?.url ||
-              ""
-          );
-        }
-
-        const logosRes = await axios.get(
-          `https://neil-backend-1.onrender.com/logos/all-logos`,
-          {
-            headers: { Authorization: `Bearer ${accessToken}` },
-          }
-        );
-        const validLogos = logosRes.data.filter((l) => l.variants?.length > 0);
-        setLogos(validLogos);
-        if (validLogos.length > 0) {
-          setSelectedLogoId(validLogos[0].id);
-          setSelectedLogoVariantId(validLogos[0].variants[0].id);
-        }
-      } catch (err) {
-        setError("Product load failed.");
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchData();
-  }, [id, accessToken]);
+        const { data } = await axios.get(`http://localhost:3000/products/public/${id}`);
+        const p = data.product;
+        const v = p.variants[0];
+        setProduct(p);
+        setVariantId(v.id);
+        setImageUrl(v.images[0]?.url);
+        setCurrentView(v.images[0]?.type || "front");
+        const q = {};
+        v.attributes.forEach(a => (q[a.name] = 0));
+        setQty(q);
+      } catch { setMsg("Failed to load product"); }
+      finally { setLoading(false); }
+    })();
+  }, [id]);
 
   useEffect(() => {
-    if (!productVariant) return;
-    const match = productVariant.images?.find(
-      (i) => i.type?.toLowerCase() === selectedView.toLowerCase()
-    );
-    if (match) setMainImageUrl(match.url);
-  }, [selectedView, productVariant]);
+    if (!previewRef.current) return;
+    const resize = () => setPreviewSize({ w: previewRef.current.offsetWidth, h: previewRef.current.offsetHeight });
+    resize();
+    window.addEventListener("resize", resize);
+    return () => window.removeEventListener("resize", resize);
+  }, [imageUrl, loading]); // Added loading to dependency to ensure it runs after UI renders
 
-  useEffect(() => {
-    const update = () => {
-      if (previewRef.current) {
-        setPreviewDimensions({
-          width: previewRef.current.offsetWidth,
-          height: previewRef.current.offsetHeight,
-        });
-      }
-    };
-    window.addEventListener("resize", update);
-    const timer = setTimeout(update, 500);
-    return () => {
-      window.removeEventListener("resize", update);
-      clearTimeout(timer);
-    };
-  }, [mainImageUrl, selectedVariantId]);
+  // Check if placement matches the current view (Front/Back)
+  const isPlacementSelectable = (p) => {
+    const pType = p.type || "front";
+    return pType === currentView;
+  };
 
-  // --- RENDER PLACEMENT WITH VIEW CHECK ---
-  const renderPlacement = (placement) => {
-    // Check 1: Is this placement selected?
-    if (!selectedPlacementIds.includes(placement.id)) return null;
+  const toggleLogo = id => {
+    setSelectedLogos(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+  };
 
-    // Check 2: Does placement view type match current selected view (e.g., "front" === "front")?
-    const placementType = placement.type?.toLowerCase() || "front";
-    if (placementType !== selectedView.toLowerCase()) return null;
-
-    const { width, height } = previewDimensions;
-    if (!width) return null;
-
-    const logoUrl = selectedLogoVariant
-      ? selectedLogoVariant.url
-      : placement.logo_url || placement.logo?.url;
-    if (!logoUrl) return null;
-
-    const t =
-      ((placement.position_y_percent || placement.position_y || 0) / 100) *
-      height;
-    const l =
-      ((placement.position_x_percent || placement.position_x || 0) / 100) *
-      width;
-    const w =
-      ((placement.width_percent || placement.width || 10) / 100) * width;
-
-    return (
-      <img
-        key={placement.id}
-        src={logoUrl}
-        className="position-absolute"
-        style={{
-          top: `${t}px`,
-          left: `${l}px`,
-          width: `${w}px`,
-          zIndex: 50,
-          pointerEvents: "none",
-          objectFit: "contain",
-        }}
-        crossOrigin="anonymous"
-      />
-    );
+  const togglePlacement = (logoId, pid) => {
+    setSelectedPlacements(prev => {
+      const s = new Set(prev[logoId] || []);
+      s.has(pid) ? s.delete(pid) : s.add(pid);
+      return { ...prev, [logoId]: s };
+    });
   };
 
   const handleAddToCart = async () => {
-    const totalQty = Object.values(quantities).reduce((a, b) => a + b, 0);
-    if (totalQty === 0) return setMessage("⚠️ Please add quantity.");
+  // 1. Quantity Check (Sabse pehle check karo qty select hui hai ya nahi)
+  const totalQty = Object.values(qty).reduce((a, b) => a + b, 0);
+  if (!totalQty) {
+    setMsg("Select quantity");
+    return;
+  }
 
-    setIsProcessing(true);
-    try {
-      const canvas = await html2canvas(previewRef.current, {
-        useCORS: true,
-        backgroundColor: null,
-      });
-      const blob = await new Promise((r) => canvas.toBlob(r, "image/png"));
-      const file = new File([blob], "custom.png", { type: "image/png" });
-
-      const fd = new FormData();
-      fd.append("preview", file);
-      fd.append("user_id", user.id);
-      fd.append("product_variant_id", selectedVariantId);
-      fd.append("logo_variant_id", selectedLogoVariantId);
-      fd.append("placement_id", selectedPlacementIds[0] || "");
-
-      const res = await axios.post(
-        "https://neil-backend-1.onrender.com/customization/new",
-        fd,
-        {
-          headers: { Authorization: `Bearer ${accessToken}` },
-        }
-      );
-
-      const item = {
-        user_id: user.id,
-        product_id: product.id,
-        title: product.title,
-        image: res.data.customization.preview_image_url,
-        customizations_id: res.data.customization.id,
-        quantity: totalQty,
-        total_price: totalPrice.toFixed(2),
-        sizes: quantities,
-      };
-
-      await axios.post("https://neil-backend-1.onrender.com/cart/add", item, {
-        headers: { Authorization: `Bearer ${accessToken}` },
-      });
-
-      addToCart(item);
-      setMessage("✅ Added to cart!");
-    } catch (e) {
-      setMessage("❌ Error adding to cart.");
-    } finally {
-      setIsProcessing(false);
-    }
+  // 2. Prepare Item Data (Data object ko pehle hi ready kar lo)
+  const currentItemData = {
+    product_id: product.id,
+    title: product.title,
+    variant_id: variantId,
+    quantity: totalQty,
+    qty: qty, // Raw quantities for sizes
+    selectedLogos: selectedLogos,
+    selectedPlacements: Object.keys(selectedPlacements).reduce((acc, key) => {
+      acc[key] = Array.from(selectedPlacements[key]);
+      return acc;
+    }, {}),
+    total_price: totalPrice,
   };
 
-  if (loading)
-    return (
-      <div className="vh-100 d-flex justify-content-center align-items-center">
-        <Spinner animation="border" variant="primary" />
-      </div>
-    );
+  if (!user) {
+    localStorage.setItem("pendingCartItem", JSON.stringify(currentItemData));
+    localStorage.setItem("redirectAfterLogin", window.location.pathname);
+    
+    navigate("/login", { state: { redirectTo: window.location.pathname } });
+    return;
+  }
+
+  setProcessing(true);
+  try {
+    const canvas = await html2canvas(previewRef.current, { 
+      useCORS: true, 
+      backgroundColor: null 
+    });
+    const blob = await new Promise((r) => canvas.toBlob(r));
+    const file = new File([blob], "preview.png", { type: "image/png" });
+    const fd = new FormData();
+    fd.append("preview", file);
+    fd.append("user_id", user.id);
+    fd.append("product_variant_ids", JSON.stringify([variantId]));
+    fd.append("logo_variant_ids", JSON.stringify(selectedLogos.length > 0 ? selectedLogos : null));    
+    const placementPayload = Object.keys(selectedPlacements).length > 0 
+      ? currentItemData.selectedPlacements 
+      : null;
+    fd.append("placement_ids", JSON.stringify(placementPayload));
+    const res = await axios.post("http://localhost:3000/customization/new", fd, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+    const sizesWithDetails = {};
+    variant.attributes.forEach((a) => {
+      const q = qty[a.name] || 0;
+      if (q > 0) {
+        const unitPrice = Number(product.price) + Number(a.adjustment || 0);
+        sizesWithDetails[a.name] = {
+          qty: q,
+          price: unitPrice,
+          subtotal: unitPrice * q,
+        };
+      }
+    });
+      const finalItem = {
+      user_id: user.id,
+      product_id: product.id,
+      title: product.title,
+      image: res.data.customization.preview_image_url, 
+      customizations_id: res.data.customization.id,
+      quantity: totalQty,
+      sizes: sizesWithDetails,
+      total_price: totalPrice,
+    };
+
+    await axios.post("http://localhost:3000/cart/add", finalItem, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+
+    addToCart(finalItem);
+    navigate("/cart");
+
+  } catch (err) {
+    console.error("Add to cart error:", err);
+    setMsg("Add to cart failed. Please try again.");
+  } finally {
+    setProcessing(false);
+  }
+};
+
+  if (loading) return <div className="vh-100 d-flex justify-content-center align-items-center"><Spinner /></div>;
 
   return (
-    <div className="bg-light min-vh-100">
+    <>
       <TopBar />
       <Container className="py-4">
-        <Button
-          variant="outline-secondary"
-          size="sm"
-          onClick={() => navigate(-1)}
-          className="mb-4 rounded-pill px-3"
-        >
-          <FontAwesomeIcon icon={faArrowLeft} className="me-2" /> Back
-        </Button>
-
-        <Row className="g-4">
-          <Col lg={5}>
-            <div className="sticky-top" style={{ top: "90px" }}>
-              <Card className="border-0 shadow-sm rounded-4 overflow-hidden">
-                <div
-                  ref={previewRef}
-                  className="position-relative bg-white"
-                  style={{ aspectRatio: "1/1" }}
-                >
-                  <img
-                    src={mainImageUrl}
-                    className="w-100 h-100 object-fit-contain"
-                    alt="base"
-                    crossOrigin="anonymous"
-                  />
-                  {viewPlacements.map(renderPlacement)}
-                </div>
-                <div className="p-2 bg-dark text-white text-center small">
-                  Live Design Preview
-                </div>
-              </Card>
-              <div className="d-flex justify-content-center gap-2 mt-3">
-                {productVariant?.images?.map((img) => (
-                  <Button
-                    key={img.id}
-                    variant={
-                      selectedView.toLowerCase() === img.type?.toLowerCase()
-                        ? "primary"
-                        : "white"
-                    }
-                    size="sm"
-                    className="shadow-sm rounded-pill px-4 py-2 border"
-                    onClick={() => setSelectedView(img.type)}
-                  >
-                    {img.type?.toUpperCase()}
-                  </Button>
-                ))}
-              </div>
+        <Row className="g-4 form-box">
+          {/* PREVIEW SECTION */}
+          <Col md={4}>
+            <div ref={previewRef} className="border rounded bg-white position-relative" style={{ aspectRatio: "1/1", overflow: 'hidden' }}>
+              <img src={imageUrl} alt="" className="w-100 h-100 object-fit-contain p-4" />
+              
+              {/* DISPLAY LOGOS ON PRODUCT */}
+              {selectedLogos.map(logoId =>
+                Array.from(selectedPlacements[logoId] || []).map(pid => {
+                  const p = variant.placements.find(pl => pl.id === pid);
+                  // Render only if placement exists AND matches current view
+                  if (!p || (p.type || "front") !== currentView) return null;
+                  
+                  return (
+                    <img key={pid} src={p.logo.url} alt="" className="position-absolute"
+                      style={{
+                        top: `${(p.position_y / 100) * previewSize.h}px`,
+                        left: `${(p.position_x / 100) * previewSize.w}px`,
+                        width: `${(p.width / 100) * previewSize.w}px`,
+                        pointerEvents: 'none',
+                        zIndex: 10
+                      }}
+                    />
+                  );
+                })
+              )}
+            </div>
+            
+            <div className="d-flex gap-2 mt-2">
+              {variant?.images.map((img, i) => (
+                <Image key={img.id} src={img.url} width={60} height={60} rounded
+                  onClick={() => { setImageUrl(img.url); setSelectedImageIndex(i); setCurrentView(img.type || "front"); }}
+                  style={{ cursor: "pointer", border: i === selectedImageIndex ? "2px solid #000" : "1px solid #ccc" }}
+                />
+              ))}
             </div>
           </Col>
 
-          <Col lg={7}>
-            <div className="bg-white p-4 rounded-4 shadow-sm border">
-              <Badge bg="primary" className="mb-2">
-                Customizable
-              </Badge>
-              <h2 className="fw-bold">{product.title}</h2>
-              <p className="text-muted">{product.category?.title}</p>
-              <hr />
+          {/* CONTROLS SECTION */}
+          <Col md={5}>
+            <h3>{product.title}</h3>
+            <p className="text-muted small">{product.description}</p>
 
-              <div className="mb-4">
-                <h6 className="fw-bold text-uppercase small text-primary mb-3">
-                  1. Configuration
-                </h6>
-                <Row className="g-3">
-                  <Col md={6}>
-                    <Form.Label className="small fw-bold">
-                      Select Variant
-                    </Form.Label>
-                    <Form.Select
-                      className="rounded-3 shadow-sm"
-                      value={selectedVariantId}
-                      onChange={(e) => setSelectedVariantId(e.target.value)}
-                    >
-                      {product.variants.map((v) => (
-                        <option key={v.id} value={v.id}>
-                          {v.color}
-                        </option>
-                      ))}
-                    </Form.Select>
-                  </Col>
-                  <Col md={6}>
-                    <Form.Label className="small fw-bold">
-                      Select Logo
-                    </Form.Label>
-                    <Form.Select
-                      className="rounded-3 shadow-sm"
-                      value={selectedLogoId}
-                      onChange={(e) => setSelectedLogoId(e.target.value)}
-                    >
-                      {logos.map((l) => (
-                        <option key={l.id} value={l.id}>
-                          {l.title}
-                        </option>
-                      ))}
-                    </Form.Select>
-                  </Col>
-                </Row>
+            <div className="mb-3 position-relative">
+  <b>Select Logos</b>
+
+  {/* DROPDOWN HEADER */}
+  <div
+    onClick={() => setLogoDropdownOpen(prev => !prev)}
+    className="border rounded p-2 mt-2 d-flex justify-content-between align-items-center"
+    style={{ cursor: "pointer", background: "#333", color: "#fff" }}
+  >
+    <span>
+      {selectedLogos.length === 0
+        ? "Select Logos"
+        : `${selectedLogos.length} Logo(s) Selected`}
+    </span>
+    <span style={{ transform: logoDropdownOpen ? "rotate(180deg)" : "rotate(0deg)" }}>
+      ▼
+    </span>
+  </div>
+
+  {/* DROPDOWN LIST */}
+  {logoDropdownOpen && (
+    <div
+      className="border rounded mt-1 p-2"
+      style={{
+        position: "absolute",
+        top: "100%",
+        left: 0,
+        right: 0,
+        background: "#555",
+        zIndex: 20,
+        maxHeight: 220,
+        overflowY: "auto"
+      }}
+    >
+      {logos.map(logo => {
+        const selected = selectedLogos.includes(logo.id);
+
+        return (
+          <div
+            key={logo.id}
+            onClick={() => toggleLogo(logo.id)}
+            className={`d-flex align-items-center gap-2 p-2 rounded mb-1
+              ${selected ? "border border-primary" : ""}`}
+            style={{ cursor: "pointer", background: "#666" }}
+          >
+            <img
+              src={logo.url}
+              alt={logo.title}
+              style={{ width: 40, height: 40, objectFit: "contain", background: "#fff", borderRadius: 4 }}
+            />
+            <span className="text-white flex-grow-1">{logo.title}</span>
+            <Form.Check
+              type="checkbox"
+              checked={selected}
+              readOnly
+            />
+          </div>
+        );
+      })}
+    </div>
+  )}
+</div>
+
+
+            {selectedLogos.map(logoId => (
+              <div key={logoId} className="mb-3 p-3 border rounded bg-light">
+                <b>Placements for {logos.find(l => l.id === logoId)?.title}</b>
+                {variant.placements.filter(p => p.logo?.id === logoId).map(p => {
+                  const selectable = isPlacementSelectable(p);
+                  return (
+                    <Form.Check key={p.id} type="checkbox"
+                      label={`${p.name} ${!selectable ? `(Switch to ${p.type || 'front'} view)` : ''}`}
+                      disabled={!selectable}
+                      checked={(selectedPlacements[logoId] || new Set()).has(p.id)}
+                      onChange={() => togglePlacement(logoId, p.id)}
+                    />
+                  );
+                })}
               </div>
+            ))}
 
-              {selectedLogo && (
-                <div className="mb-4">
-                  <h6 className="fw-bold text-uppercase small text-primary mb-3">
-                    2. Logo Style
-                  </h6>
-                  <div className="d-flex gap-3">
-                    {selectedLogo.variants.map((lv) => (
-                      <div
-                        key={lv.id}
-                        onClick={() => setSelectedLogoVariantId(lv.id)}
-                        className={`p-2 border-2 rounded-3 transition-all ${
-                          selectedLogoVariantId === lv.id
-                            ? "border-primary bg-light"
-                            : "border-light shadow-sm"
-                        }`}
-                        style={{
-                          width: "70px",
-                          height: "70px",
-                          cursor: "pointer",
-                          background: "#fdfdfd",
-                        }}
-                      >
-                        <img
-                          src={lv.url}
-                          className="w-100 h-100 object-fit-contain"
-                          alt="variant"
-                        />
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
+            <div className="mb-3">
+  <b>Size & Quantity</b>
 
-              {viewPlacements.length > 0 && (
-                <div className="mb-4">
-                  <h6 className="fw-bold text-uppercase small text-primary mb-3">
-                    3. Placement
-                  </h6>
-                  <div className="d-flex flex-wrap gap-2">
-                    {viewPlacements.map((p) => (
-                      <Button
-                        key={p.id}
-                        variant={
-                          selectedPlacementIds.includes(p.id)
-                            ? "primary"
-                            : "outline-secondary"
-                        }
-                        className={`rounded-pill px-4 ${
-                          selectedPlacementIds.includes(p.id)
-                            ? ""
-                            : "text-dark border-secondary bg-light"
-                        }`}
-                        onClick={() => {
-                          setSelectedPlacementIds((prev) =>
-                            prev.includes(p.id) ? [] : [p.id]
-                          );
+  {variant?.attributes.map(a => {
+    const unitPrice =
+       Number(a.adjustment || 0);
 
-                          requestAnimationFrame(() => {
-                            if (previewRef.current) {
-                              setPreviewDimensions({
-                                width: previewRef.current.offsetWidth,
-                                height: previewRef.current.offsetHeight,
-                              });
-                            }
-                          });
-                        }}
-                      >
-                        {selectedPlacementIds.includes(p.id) && (
-                          <FontAwesomeIcon
-                            icon={faCheckCircle}
-                            className="me-2"
-                          />
-                        )}
-                        {p.name}{" "}
-                        <Badge
-                          bg="light"
-                          text="dark"
-                          className="ms-1 border small opacity-75"
-                        >
-                          {p.type}
-                        </Badge>
-                      </Button>
-                    ))}
-                  </div>
-                  <Form.Text className="text-muted d-block mt-2">
-                    Note: Logos will only appear on their respective view
-                    (Front/Back).
-                  </Form.Text>
-                </div>
-              )}
+    return (
+      <div
+        key={a.name}
+        className="d-flex align-items-center justify-content-between mt-2 p-2 border rounded"
+      >
+        {/* SIZE + PRICE */}
+        <div>
+          <div><b>Size:</b> {a.name}</div>
+          <div className="text-muted small">
+            Base Price + ${unitPrice.toFixed(2)}
+          </div>
+        </div>
 
-              <div className="mb-4 pt-3 border-top">
-                <h6 className="fw-bold text-uppercase small text-primary mb-3">
-                  4. Size & Quantity
-                </h6>
-                <Row className="g-2">
-                  {allSizes.map((size) => (
-                    <Col xs={4} md={3} key={size}>
-                      <div className="p-3 border rounded-3 text-center bg-light shadow-sm">
-                        <div className="fw-bold small text-muted">
-                          {size.toUpperCase()}
-                        </div>
-                        <Form.Control
-                          type="number"
-                          className="text-center border-0 mt-2 bg-white rounded-2 fw-bold"
-                          value={quantities[size] || 0}
-                          onChange={(e) =>
-                            setQuantities((prev) => ({
-                              ...prev,
-                              [size]: parseInt(e.target.value) || 0,
-                            }))
-                          }
-                        />
-                      </div>
-                    </Col>
-                  ))}
-                </Row>
-              </div>
+        {/* QUANTITY INPUT */}
+        <Form.Control
+          type="number"
+          min="0"
+          style={{ width: 90 }}
+          value={qty[a.name] || 0}
+          onChange={e =>
+            setQty({
+              ...qty,
+              [a.name]: Number(e.target.value)
+            })
+          }
+        />
+      </div>
+    );
+  })}
+</div>
 
-              <div className="d-flex justify-content-between align-items-center bg-primary bg-opacity-10 p-4 rounded-4 mt-4 border border-primary border-opacity-25">
-                <div>
-                  <div className="small text-muted fw-bold">Grand Total</div>
-                  <h2 className="fw-bold text-primary mb-0">
-                    ${totalPrice.toFixed(2)}
-                  </h2>
-                </div>
-                <Button
-                  variant="primary"
-                  size="lg"
-                  className="rounded-pill px-5 py-3 fw-bold shadow"
-                  onClick={handleAddToCart}
-                  disabled={isProcessing}
-                >
-                  {isProcessing ? (
-                    <Spinner size="sm" />
-                  ) : (
-                    <>
-                      <FontAwesomeIcon icon={faCartPlus} className="me-2" /> Add
-                      to Cart
-                    </>
-                  )}
-                </Button>
-              </div>
-              {message && (
-                <Alert
-                  className="mt-3 rounded-4 shadow-sm"
-                  variant={message.includes("✅") ? "success" : "danger"}
-                >
-                  {message}
-                </Alert>
-              )}
+          </Col>
+
+          <Col md={3}>
+            <div className="border rounded p-3 shadow-sm sticky-top" style={{ top: '20px' }}>
+              <h4>Base Price: ${product.price}</h4>
+              <div className="d-flex justify-content-between mt-3"><span>Total</span><b>$ {totalPrice.toFixed(2)}</b></div>
+              <Button className="w-100 mt-3" variant="warning" disabled={processing} onClick={handleAddToCart}>
+                {processing ? <Spinner size="sm" /> : "Add to Cart"}
+              </Button>
+              {msg && <Alert className="mt-2" variant="danger">{msg}</Alert>}
             </div>
           </Col>
         </Row>
       </Container>
       <Footer />
-    </div>
+    </>
   );
 }
 
