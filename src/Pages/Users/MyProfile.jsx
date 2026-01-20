@@ -80,7 +80,7 @@ function MyProfile() {
     });
   };
 
-  // === Password modal handlers ===
+
   const handlePasswordShow = () => setShowPasswordModal(true);
   const handlePasswordClose = () => setShowPasswordModal(false);
 
@@ -99,7 +99,6 @@ function MyProfile() {
     getMyUser();
   }, [accessToken]);
 
-  // === Fetch user addresses ===
   const fetchAddresses = async () => {
     try {
       const res = await axios.get(
@@ -110,7 +109,6 @@ function MyProfile() {
       );
       setAddresses(res.data.addresses || []);
     } catch (err) {
-      // Set addresses to empty array instead of throwing error
       setAddresses([]);
     } finally {
       setLoading(false);

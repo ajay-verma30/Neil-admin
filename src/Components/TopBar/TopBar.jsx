@@ -6,7 +6,8 @@ import {
   faPowerOff,
   faUser,
   faBoxOpen,
-  faShoppingCart, // Shopping cart icon add kiya
+  faShoppingCart,
+  faWallet
 } from "@fortawesome/free-solid-svg-icons";
 import { AuthContext } from "../../context/AuthContext";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -16,8 +17,7 @@ import axios from "axios";
 
 function TopBar() {
   const { logout, user, accessToken } = useContext(AuthContext);
-  // cartCount ko context se nikala
-  const { cart, cartCount } = useContext(CartContext); 
+  const { cartCount } = useContext(CartContext);
   const navigate = useNavigate();
   const location = useLocation();
   const [orgDetails, setOrgDetails] = useState(null);
@@ -32,9 +32,7 @@ function TopBar() {
         const response = await axios.get(
           `https://neil-backend-1.onrender.com/attributes/organization/${user.org_id}/attributes`,
           {
-            headers: {
-              Authorization: `Bearer ${accessToken}`,
-            },
+            headers: { Authorization: `Bearer ${accessToken}` },
           }
         );
         setOrgDetails(response.data.attributes);
@@ -84,12 +82,13 @@ function TopBar() {
     }
   };
 
+  const handleWalletNav = () => navigate('/my-wallet');
   const handleCartClick = () => navigate("/cart");
   const handleOrdersClick = () => navigate("/orders");
 
   return (
-    <Navbar bg="white" expand="lg" fixed="top" className="shadow-sm py-2 topbar">
-      <Container fluid>
+    <Navbar bg="white" expand="lg" fixed="top" className="shadow-sm topbar-custom">
+      <Container fluid className="px-lg-5">
         <Navbar.Brand
           onClick={handleNavigation}
           className="fw-bold text-primary d-flex align-items-center"
@@ -99,58 +98,58 @@ function TopBar() {
             <img
               src={orgDetails.logo}
               alt="Org Logo"
-              style={{ height: "40px", objectFit: "contain" }}
+              style={{ height: "35px", objectFit: "contain" }}
             />
           ) : (
-            "Neil Prints"
+            <span style={{ fontSize: "1.25rem" }}>Neil Prints</span>
           )}
         </Navbar.Brand>
 
         <Navbar.Toggle aria-controls="main-navbar" />
+
         <Navbar.Collapse id="main-navbar" className="justify-content-end">
-          <Nav className="d-flex align-items-center gap-3">
+          <Nav className="align-items-center gap-2">
             
-            {/* 🛒 Updated Cart Section */}
             {!isAdminPage && (
-              <div 
-                onClick={handleCartClick} 
-                className="position-relative me-2" 
-                style={{ cursor: "pointer" }}
-              >
-                <Button variant="outline-primary" className="rounded-pill px-3 d-flex align-items-center gap-2">
-                  <FontAwesomeIcon icon={faShoppingCart} />
-                  <span className="d-none d-md-inline">My Cart</span>
+              <Nav.Item className="position-relative me-lg-2">
+                <Button 
+                  variant="light" 
+                  onClick={handleCartClick}
+                  className="rounded-pill cart-btn d-flex align-items-center justify-content-center"
+                >
+                  <FontAwesomeIcon icon={faShoppingCart} className="text-primary" />
                   {cartCount > 0 && (
-                    <Badge 
-                      pill 
-                      bg="danger" 
-                      className="ms-1 px-2"
-                      style={{ fontSize: '0.75rem' }}
-                    >
+                    <Badge pill bg="danger" className="cart-badge">
                       {cartCount > 9 ? "9+" : cartCount}
                     </Badge>
                   )}
                 </Button>
-              </div>
+              </Nav.Item>
             )}
 
             {user ? (
-              <Dropdown align="end">
+              <Dropdown as={Nav.Item} align="end">
                 <Dropdown.Toggle
-                  variant="light"
-                  id="dropdown-basic"
-                  className="border-0 d-flex align-items-center text-dark bg-transparent px-0"
+                  as="div"
+                  id="user-dropdown"
+                  className="d-flex align-items-center px-2 profile-toggle text-dark"
+                  style={{ cursor: "pointer" }}
                 >
-                  <FontAwesomeIcon icon={faUserCircle} size="lg" className="me-2 text-primary" />
+                  <FontAwesomeIcon icon={faUserCircle} size="lg" className="text-primary me-2" />
                   <span className="fw-semibold d-none d-sm-inline">
                     {user?.email?.split('@')[0] || "User"}
                   </span>
                 </Dropdown.Toggle>
 
-                <Dropdown.Menu className="shadow border-0 mt-2">
+                <Dropdown.Menu className="shadow border-0 mt-2 custom-dropdown-menu">
                   <Dropdown.Item onClick={handleProfileNav} className="py-2">
                     <FontAwesomeIcon icon={faUser} className="me-2 text-primary" />
                     My Profile
+                  </Dropdown.Item>
+
+                  <Dropdown.Item onClick={handleWalletNav} className="py-2">
+                    <FontAwesomeIcon icon={faWallet} className="me-2 text-primary" />
+                    Wallet
                   </Dropdown.Item>
 
                   {!isAdminPage && (
@@ -172,7 +171,7 @@ function TopBar() {
               <Button 
                 variant="primary" 
                 onClick={() => navigate("/login")}
-                className="px-4 rounded-pill fw-bold"
+                className="px-4 rounded-pill fw-bold btn-sm"
               >
                 Login
               </Button>

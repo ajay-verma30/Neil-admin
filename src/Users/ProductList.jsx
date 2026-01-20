@@ -71,14 +71,11 @@ export default function ProductList() {
         setLoading(true);
         setError("");
 
-        // Debugging logs
-        console.log("Fetching products for Org:", user?.org_id || "Guest");
-
         const response = await axios.get("https://neil-backend-1.onrender.com/products/public-list", {
           params: {
             category: categoryParam || undefined,
             sub_category: subCategoryParam || undefined,
-            user_org_id: user?.org_id || null // Explicitly send null if no user
+            user_org_id: user?.org_id || null 
           },
           headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {}
         });
@@ -107,7 +104,6 @@ export default function ProductList() {
     if (type === "category") {
       if (cats.includes(value)) {
         cats = cats.filter(c => c !== value);
-        // Remove related subcategories
         const targetCat = categories.find(c => c.title === value);
         if (targetCat) {
           const subTitles = targetCat.subcategories.map(s => s.title);
@@ -134,7 +130,6 @@ export default function ProductList() {
 
   const clearFilters = () => setSearchParams({});
 
-  // 3. Render States
   if (authLoading || (loading && products.length === 0)) {
     return (
       <div className="vh-100 d-flex flex-column justify-content-center align-items-center bg-white">
@@ -170,7 +165,7 @@ export default function ProductList() {
                     id={`cat-${cat.id}`}
                     label={<span className={`small fw-semibold ${expandedIndex === idx ? 'text-white' : 'text-dark'}`}>{cat.title}</span>}
                     checked={categoryParam?.split(",").includes(cat.title) || false}
-                    onChange={() => {}} // Handled by onClick for better hit area
+                    onChange={() => {}} 
                     onClick={e => {
                       e.stopPropagation();
                       toggleFilter("category", cat.title);

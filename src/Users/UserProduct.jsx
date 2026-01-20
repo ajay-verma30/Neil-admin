@@ -327,15 +327,13 @@ const [logoDropdownOpen, setLogoDropdownOpen] = useState(false);
         key={a.name}
         className="d-flex align-items-center justify-content-between mt-2 p-2 border rounded"
       >
-        {/* SIZE + PRICE */}
         <div>
           <div><b>Size:</b> {a.name}</div>
           <div className="text-muted small">
             Base Price + ${unitPrice.toFixed(2)}
           </div>
         </div>
-
-        {/* QUANTITY INPUT */}
+        
         <Form.Control
           type="number"
           min="0"

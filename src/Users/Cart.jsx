@@ -3,16 +3,22 @@ import TopBar from "../Components/TopBar/TopBar";
 import Footer from "./Footer";
 import { AuthContext } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
-import { Container, Table, Image, Button, Spinner, Modal, Form } from "react-bootstrap";
+import { Container, Table, Image, Button, Spinner, Modal, Form, Alert } from "react-bootstrap";
 import axios from "axios";
 
 function Cart() {
   const { user, accessToken } = useContext(AuthContext);
   const navigate = useNavigate();
 
+  // =========================
+  // States
+  // =========================
   const [cartItems, setCartItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [deletingId, setDeletingId] = useState(null);
+
+  const [walletBalance, setWalletBalance] = useState(0);
+  const [applyWallet, setApplyWallet] = useState(false);
 
   const [showAddressModal, setShowAddressModal] = useState(false);
   const [addresses, setAddresses] = useState([]);
@@ -28,13 +34,15 @@ function Cart() {
     country: "",
     is_default: false,
   });
-  const [savingAddress, setSavingAddress] = useState(false);
   const [selectedShipping, setSelectedShipping] = useState("");
   const [selectedBilling, setSelectedBilling] = useState("");
   const [addressContext, setAddressContext] = useState("");
 
+  const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(null);
+
   // =========================
-  // Fetch cart items
+  // Fetch Cart Items
   // =========================
   useEffect(() => {
     const fetchCart = async () => {
@@ -47,6 +55,7 @@ function Cart() {
         localStorage.setItem("cart", JSON.stringify(res.data || []));
       } catch (err) {
         console.error("Failed to fetch cart:", err);
+        setError("Failed to fetch cart items");
       } finally {
         setLoading(false);
       }
@@ -55,14 +64,37 @@ function Cart() {
   }, [user, accessToken]);
 
   // =========================
-  // Subtotal calculation
+  // Fetch Wallet Balance
+  // =========================
+  useEffect(() => {
+    const fetchWallet = async () => {
+      try {
+        const res = await axios.get("http://localhost:3000/wallet/wallet-balance", {
+          headers: { Authorization: `Bearer ${accessToken}` },
+        });
+        setWalletBalance(Number(res.data.balance || 0));
+      } catch (err) {
+        console.error("Failed to fetch wallet balance:", err);
+        setWalletBalance(0);
+      }
+    };
+    fetchWallet();
+  }, [accessToken]);
+
+  // =========================
+  // Subtotal & Total Calculation
   // =========================
   const subtotal = useMemo(() => {
     return cartItems.reduce((acc, item) => acc + parseFloat(item.total_price || 0), 0);
   }, [cartItems]);
 
+  const total = useMemo(() => {
+    if (!applyWallet) return subtotal;
+    return Math.max(subtotal - walletBalance, 0);
+  }, [subtotal, walletBalance, applyWallet]);
+
   // =========================
-  // Delete cart item
+  // Delete Cart Item
   // =========================
   const handleDelete = async (id) => {
     if (!window.confirm("Are you sure you want to remove this item?")) return;
@@ -71,11 +103,9 @@ function Cart() {
       await axios.delete(`https://neil-backend-1.onrender.com/cart/${id}`, {
         headers: { Authorization: `Bearer ${accessToken}` },
       });
-
       const updatedCart = cartItems.filter(item => item.id !== id);
       setCartItems(updatedCart);
       localStorage.setItem("cart", JSON.stringify(updatedCart));
-      window.location.reload();
     } catch (err) {
       alert("Failed to delete item.");
       console.error(err);
@@ -85,7 +115,7 @@ function Cart() {
   };
 
   // =========================
-  // Handle order button click
+  // Handle Order Button
   // =========================
   const handleOrderClick = async () => {
     setShowAddressModal(true);
@@ -96,20 +126,19 @@ function Cart() {
       });
       setAddresses(res.data.addresses || []);
     } catch (err) {
-      setAddresses([]);
       console.error("Failed to fetch addresses:", err);
+      setAddresses([]);
     } finally {
       setFetchingAddresses(false);
     }
   };
 
   // =========================
-  // Add new address
+  // Save New Address
   // =========================
   const handleSaveAddress = async (e) => {
     e.preventDefault();
     try {
-      setSavingAddress(true);
       await axios.post(
         "https://neil-backend-1.onrender.com/address/new-address",
         newAddress,
@@ -118,45 +147,63 @@ function Cart() {
       alert("✅ Address added successfully.");
       setShowNewAddressForm(false);
       setNewAddress({
-        type: "", address_line_1: "", address_line_2: "",
-        city: "", state: "", postal_code: "", country: "USA", is_default: false,
+        type: "",
+        address_line_1: "",
+        address_line_2: "",
+        city: "",
+        state: "",
+        postal_code: "",
+        country: "USA",
+        is_default: false,
       });
       handleOrderClick(); // refresh addresses
     } catch (err) {
       alert(err.response?.data?.message || "Failed to save address.");
-    } finally {
-      setSavingAddress(false);
     }
   };
 
   // =========================
-  // Confirm order
+  // Confirm Order
   // =========================
-  const handleConfirmOrder = async () => {
-    if (!selectedShipping || !selectedBilling) return alert("Select shipping and billing addresses");
+const handleConfirmOrder = async () => {
+  if (!selectedShipping || !selectedBilling) return alert("Select shipping and billing addresses");
+  
+  try {
+    setLoading(true);
 
-    try {
-      await axios.post(
-        "https://neil-backend-1.onrender.com/orders/new",
-        {
-          user_id: user.id,
-          items: cartItems,
-          shipping_address_id: selectedShipping,
-          billing_address_id: selectedBilling,
-        },
+    let walletUsed = 0;
+    if (applyWallet && walletBalance > 0) {
+      walletUsed = Math.min(walletBalance, subtotal);
+    }
+    const remainingTotal = subtotal - walletUsed;
+    let clientSecret = null;
+    if (remainingTotal > 0) {
+      const pi = await axios.post(
+        "https://neil-backend-1.onrender.com/create-payment-intent",
+        { amount: Math.round(remainingTotal * 100) }, 
         { headers: { Authorization: `Bearer ${accessToken}` } }
       );
-
-      alert("✅ Order placed successfully!");
-      setCartItems([]);
-      localStorage.removeItem("cart");
-      setShowAddressModal(false);
-      navigate("/orders");
-    } catch (err) {
-      alert("Failed to place order.");
-      console.error(err);
+      clientSecret = pi.data.clientSecret;
     }
-  };
+    navigate("/payment", {
+      state: {
+        clientSecret,      
+        subtotal,          
+        total: remainingTotal,
+        walletUsed,        
+        cartItems,
+        shipping: selectedShipping,
+        billing: selectedBilling,
+      },
+    });
+
+  } catch (err) {
+    alert(err.response?.data?.message || "❌ Failed to process order");
+    console.error(err);
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
@@ -165,6 +212,22 @@ function Cart() {
       <Container className="mt-5 pt-5" style={{ flex: 1, paddingBottom: "100px" }}>
         <h3 className="mb-4 fw-bold text-primary">🛒 My Cart</h3>
 
+        {/* Wallet Balance Section */}
+        <div className="d-flex justify-content-between align-items-center my-3 p-3 border rounded shadow-sm">
+          <div><strong>Wallet Balance:</strong> ${walletBalance.toFixed(2)}</div>
+          <Form.Check 
+            type="checkbox"
+            label="Apply Wallet"
+            checked={applyWallet}
+            onChange={() => setApplyWallet(prev => !prev)}
+          />
+        </div>
+
+        {/* Messages */}
+        {success && <Alert variant="success">{success}</Alert>}
+        {error && <Alert variant="danger">{error}</Alert>}
+
+        {/* Cart Table */}
         {loading ? (
           <div className="text-center mt-5"><Spinner animation="border" /></div>
         ) : cartItems.length === 0 ? (
@@ -213,6 +276,12 @@ function Cart() {
                   <td colSpan={3} className="text-end">Subtotal:</td>
                   <td colSpan={2}>${subtotal.toFixed(2)}</td>
                 </tr>
+                {applyWallet && (
+                  <tr className="table-info fw-bold">
+                    <td colSpan={3} className="text-end">Total after Wallet:</td>
+                    <td colSpan={2}>${total.toFixed(2)}</td>
+                  </tr>
+                )}
               </tbody>
             </Table>
 
@@ -227,7 +296,7 @@ function Cart() {
 
       {/* =========================
           Address Modal
-          ========================= */}
+      ========================= */}
       <Modal
         show={showAddressModal}
         onHide={() => setShowAddressModal(false)}
@@ -240,15 +309,12 @@ function Cart() {
         </Modal.Header>
         <Modal.Body>
           {fetchingAddresses ? (
-            <div className="text-center py-4">
-              <Spinner animation="border" />
-            </div>
+            <div className="text-center py-4"><Spinner animation="border" /></div>
           ) : (
             <div className="row">
-              {/* 🏠 Shipping Address */}
+              {/* Shipping */}
               <div className="col-md-6 border-end">
                 <h5 className="fw-bold mb-3 text-primary">Shipping Address</h5>
-
                 {addresses.length > 0 ? (
                   <>
                     <Form.Group className="mb-3">
@@ -264,38 +330,23 @@ function Cart() {
                         ))}
                       </Form.Select>
                     </Form.Group>
-                    <Button
-                      variant="outline-primary"
-                      size="sm"
-                      onClick={() => {
-                        setShowNewAddressForm(true);
-                        setAddressContext("shipping");
-                      }}
-                    >
+                    <Button variant="outline-primary" size="sm" onClick={() => { setShowNewAddressForm(true); setAddressContext("shipping"); }}>
                       ➕ Add New Shipping Address
                     </Button>
                   </>
                 ) : (
                   <div className="text-center">
                     <p>No addresses found.</p>
-                    <Button
-                      variant="outline-primary"
-                      size="sm"
-                      onClick={() => {
-                        setShowNewAddressForm(true);
-                        setAddressContext("shipping");
-                      }}
-                    >
+                    <Button variant="outline-primary" size="sm" onClick={() => { setShowNewAddressForm(true); setAddressContext("shipping"); }}>
                       ➕ Add Address
                     </Button>
                   </div>
                 )}
               </div>
 
-              {/* 💳 Billing Address */}
+              {/* Billing */}
               <div className="col-md-6">
                 <h5 className="fw-bold mb-3 text-success">Billing Address</h5>
-
                 {addresses.length > 0 ? (
                   <>
                     <Form.Group className="mb-3">
@@ -311,28 +362,14 @@ function Cart() {
                         ))}
                       </Form.Select>
                     </Form.Group>
-                    <Button
-                      variant="outline-success"
-                      size="sm"
-                      onClick={() => {
-                        setShowNewAddressForm(true);
-                        setAddressContext("billing");
-                      }}
-                    >
+                    <Button variant="outline-success" size="sm" onClick={() => { setShowNewAddressForm(true); setAddressContext("billing"); }}>
                       ➕ Add New Billing Address
                     </Button>
                   </>
                 ) : (
                   <div className="text-center">
                     <p>No addresses found.</p>
-                    <Button
-                      variant="outline-success"
-                      size="sm"
-                      onClick={() => {
-                        setShowNewAddressForm(true);
-                        setAddressContext("billing");
-                      }}
-                    >
+                    <Button variant="outline-success" size="sm" onClick={() => { setShowNewAddressForm(true); setAddressContext("billing"); }}>
                       ➕ Add Address
                     </Button>
                   </div>
@@ -341,76 +378,34 @@ function Cart() {
             </div>
           )}
 
-          {/* ➕ Add Address Form */}
+          {/* New Address Form */}
           {showNewAddressForm && (
             <div className="mt-4 border-top pt-3">
-              <h6 className="fw-bold">
-                Add New {addressContext === "shipping" ? "Shipping" : "Billing"}{" "}
-                Address
-              </h6>
+              <h6 className="fw-bold">Add New {addressContext === "shipping" ? "Shipping" : "Billing"} Address</h6>
               <Form className="mt-3" onSubmit={handleSaveAddress}>
                 <Form.Group className="mb-2">
                   <Form.Label>Type</Form.Label>
-                  <Form.Control
-                    type="text"
-                    value={newAddress.type}
-                    onChange={(e) =>
-                      setNewAddress({ ...newAddress, type: e.target.value })
-                    }
-                  />
+                  <Form.Control type="text" value={newAddress.type} onChange={(e) => setNewAddress({...newAddress, type: e.target.value})} />
                 </Form.Group>
                 <Form.Group className="mb-2">
                   <Form.Label>Address Line 1</Form.Label>
-                  <Form.Control
-                    type="text"
-                    value={newAddress.address_line_1}
-                    onChange={(e) =>
-                      setNewAddress({
-                        ...newAddress,
-                        address_line_1: e.target.value,
-                      })
-                    }
-                  />
+                  <Form.Control type="text" value={newAddress.address_line_1} onChange={(e) => setNewAddress({...newAddress, address_line_1: e.target.value})} />
                 </Form.Group>
                 <Form.Group className="mb-2">
                   <Form.Label>Address Line 2</Form.Label>
-                  <Form.Control
-                    type="text"
-                    value={newAddress.address_line_2}
-                    onChange={(e) =>
-                      setNewAddress({
-                        ...newAddress,
-                        address_line_2: e.target.value,
-                      })
-                    }
-                  />
+                  <Form.Control type="text" value={newAddress.address_line_2} onChange={(e) => setNewAddress({...newAddress, address_line_2: e.target.value})} />
                 </Form.Group>
                 <div className="row">
                   <div className="col-md-6">
                     <Form.Group className="mb-2">
                       <Form.Label>City</Form.Label>
-                      <Form.Control
-                        type="text"
-                        value={newAddress.city}
-                        onChange={(e) =>
-                          setNewAddress({ ...newAddress, city: e.target.value })
-                        }
-                      />
+                      <Form.Control type="text" value={newAddress.city} onChange={(e) => setNewAddress({...newAddress, city: e.target.value})} />
                     </Form.Group>
                   </div>
                   <div className="col-md-6">
                     <Form.Group className="mb-2">
                       <Form.Label>State</Form.Label>
-                      <Form.Control
-                        type="text"
-                        value={newAddress.state}
-                        onChange={(e) =>
-                          setNewAddress({
-                            ...newAddress,
-                            state: e.target.value,
-                          })
-                        }
-                      />
+                      <Form.Control type="text" value={newAddress.state} onChange={(e) => setNewAddress({...newAddress, state: e.target.value})} />
                     </Form.Group>
                   </div>
                 </div>
@@ -418,58 +413,22 @@ function Cart() {
                   <div className="col-md-6">
                     <Form.Group className="mb-2">
                       <Form.Label>Postal Code</Form.Label>
-                      <Form.Control
-                        type="text"
-                        value={newAddress.postal_code}
-                        onChange={(e) =>
-                          setNewAddress({
-                            ...newAddress,
-                            postal_code: e.target.value,
-                          })
-                        }
-                      />
+                      <Form.Control type="text" value={newAddress.postal_code} onChange={(e) => setNewAddress({...newAddress, postal_code: e.target.value})} />
                     </Form.Group>
                   </div>
                   <div className="col-md-6">
                     <Form.Group className="mb-2">
                       <Form.Label>Country</Form.Label>
-                      <Form.Control
-                        type="text"
-                        value={newAddress.country}
-                        onChange={(e) =>
-                          setNewAddress({
-                            ...newAddress,
-                            country: e.target.value,
-                          })
-                        }
-                      />
+                      <Form.Control type="text" value={newAddress.country} onChange={(e) => setNewAddress({...newAddress, country: e.target.value})} />
                     </Form.Group>
                   </div>
                 </div>
 
-                <Form.Check
-                  type="checkbox"
-                  label="Set as default"
-                  checked={newAddress.is_default}
-                  onChange={(e) =>
-                    setNewAddress({
-                      ...newAddress,
-                      is_default: e.target.checked,
-                    })
-                  }
-                />
+                <Form.Check type="checkbox" label="Set as default" checked={newAddress.is_default} onChange={(e) => setNewAddress({...newAddress, is_default: e.target.checked})} />
 
                 <div className="text-end mt-3">
-                  <Button
-                    type="submit"
-                    variant="success"
-                    disabled={savingAddress}
-                  >
-                    {savingAddress ? (
-                      <Spinner animation="border" size="sm" />
-                    ) : (
-                      "Save Address"
-                    )}
+                  <Button type="submit" variant="success" disabled={loading}>
+                    {loading ? <Spinner animation="border" size="sm" /> : "Save Address"}
                   </Button>
                 </div>
               </Form>
@@ -478,49 +437,9 @@ function Cart() {
         </Modal.Body>
 
         <Modal.Footer className="d-flex justify-content-between">
-          <Button
-            variant="secondary"
-            onClick={() => setShowAddressModal(false)}
-          >
-            Cancel
-          </Button>
-          <Button
-            variant="success"
-            disabled={!selectedShipping || !selectedBilling}
-            onClick={async () => {
-              try {
-                setShowAddressModal(false);
-                setLoading(true);
-
-                // 1️⃣ Request clientSecret from backend
-                const pi = await axios.post(
-                  "https://neil-backend-1.onrender.com/create-payment-intent",
-                  { amount: Math.round(subtotal * 100) } // in cents
-                );
-
-                const clientSecret = pi.data.clientSecret;
-
-                // 2️⃣ Navigate to /payment with clientSecret + addresses
-                navigate("/payment", {
-                  state: {
-                    clientSecret,
-                    subtotal,
-                    shipping: selectedShipping,
-                    billing: selectedBilling,
-                  },
-                });
-              } catch (err) {
-                alert("❌ Failed to start payment session");
-              } finally {
-                setLoading(false);
-              }
-            }}
-          >
-            {loading ? (
-              <Spinner animation="border" size="sm" />
-            ) : (
-              "Confirm & Place Order"
-            )}
+          <Button variant="secondary" onClick={() => setShowAddressModal(false)}>Cancel</Button>
+          <Button variant="success" disabled={!selectedShipping || !selectedBilling || loading} onClick={handleConfirmOrder}>
+            {loading ? <Spinner animation="border" size="sm" /> : "Confirm & Place Order"}
           </Button>
         </Modal.Footer>
       </Modal>
